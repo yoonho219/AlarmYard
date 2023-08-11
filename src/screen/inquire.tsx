@@ -2,16 +2,19 @@ import { styled } from "styled-components";
 import React, { useState } from "react";
 import search from "../assets/images/searchlogo.svg"
 import lock from "../assets/images/lock.svg"
-import PageNumber from "../components/pagenumber";
+import PageNumber from "../components/pagination";
 import openlogo from "../assets/images/openlogo.svg"
 import closelogo from "../assets/images/closelogo.svg"
+import writelogo from "../assets/images/writelogo.svg"
 
 interface InquireProps {
     number: number,
     title: string,
     writer: string,
     date: string,
-    state: boolean,
+    situation: boolean,
+    texts?: string,
+    answer?: string,
 }
 
 const inquireInfo = [
@@ -20,26 +23,28 @@ const inquireInfo = [
         title: "안녕하세요. 문의드립니다.",
         writer: "김**",
         date: "2023.01.01",
-        state: true,
+        situation: true,
+        texts: "관리자만 확인이 가능합니다"
     },
     {
         number: 51,
         title: "안녕하세요. 문의드립니다.",
         writer: "이**",
         date: "2023.01.01",
-        state: false,
+        situation: false,
+        texts: "어떻게 해야 하나요?"
     },
     {
         number: 52,
         title: "안녕하세요. 문의드립니다.",
         writer: "박**",
         date: "2023.01.01",
-        state: true,
+        situation: true,
     },
 ]
 
 export default function Inquire() {
-    const [state, setState] = useState<Boolean>(false);
+    const [state, setState] = useState<Boolean>(true);
 
     const inquireState = () => {
         setState(!state);
@@ -57,29 +62,40 @@ export default function Inquire() {
             </TopLayout>
             <InquiryForm>
                 {inquireInfo.map((e: InquireProps) => (
-                    <Inquirys>
-                        <Number>{e.number}</Number>
-                        <div className="inquiryTitle">
-                            <Title>
-                                <p>Q.</p>
-                                <h4>{e.title}</h4>
-                                <img alt="locklogo" src={lock} />
-                            </Title>
-                            <InquiryInfo>
-                                <span className="writer">{e.writer}</span>
-                                <span className="date">{e.date}</span>
-                            </InquiryInfo>
+                    <>
+                        <Inquirys>
+                            <Number>{e.number}</Number>
+                            <div className="inquiryTitle">
+                                <Title>
+                                    <p>Q.</p>
+                                    <h4>{e.title}</h4>
+                                    <img alt="locklogo" src={lock} />
+                                </Title>
+                                <InquiryInfo>
+                                    <span className="writer">{e.writer}</span>
+                                    <span className="date">{e.date}</span>
+                                </InquiryInfo>
+                            </div>
+                            <div className="states">
+                                {e.situation ? <AnswerState className="answered">답변완료</AnswerState>
+                                    : <AnswerState className="waiting">답변대기중</AnswerState>}
+                                {state ? <img alt="openlogo" src={openlogo} onClick={() => inquireState()} />
+                                    : <img alt="closelogo" src={closelogo} onClick={() => inquireState()} />}
+                            </div>
+
+                        </Inquirys>
+                        <div style={{ height: !state ? "100px" : "0px", transition: !state ? ".3s ease-out" : "none" }}>
+                            {!state ? "adaaaa" : ""}
                         </div>
-                        <div className="state">
-                            {e.state ? <><AnswerForm className="answered">답변완료</AnswerForm>
-                                <img alt="openlogo" src={openlogo} /></>
-                                : <><AnswerForm className="waiting">답변대기중</AnswerForm>
-                                    <img alt="closelogo" src={closelogo} /></>}
-                        </div>
-                    </Inquirys>
+                    </>
+
                 ))}
             </InquiryForm >
             <PageNumber />
+            <WriteInquiry>
+                <img alt="writelogo" src={writelogo} />
+                작성하기
+            </WriteInquiry>
         </>
     )
 }
@@ -146,12 +162,10 @@ const InquiryForm = styled.div`
     margin: 0 auto;
     width: 1240px;
     border-top: solid 1px #333;
-    flex-shrink: 0;
 `
 const Inquirys = styled.div`
     width: 1240px;
     height: 120px;
-    flex-shrink: 0;
     display: flex;
     align-items: center;
     border-bottom: solid 1px #D8DDE5;
@@ -162,7 +176,7 @@ const Inquirys = styled.div`
         margin-left: 99px;
     }
 
-    .state{
+    .states{
         display: flex;
         margin-left: 688px;
         .waiting{
@@ -238,7 +252,7 @@ const InquiryInfo = styled.div`
     }
 `
 
-const AnswerForm = styled.div`
+const AnswerState = styled.div`
     cursor: pointer;
     height: 46px;
     display: flex;
@@ -249,4 +263,26 @@ const AnswerForm = styled.div`
     font-size: 16px;
     font-weight: 500;
     line-height: 13px;
+`
+
+const WriteInquiry = styled.button`
+    cursor: pointer;
+    width: 117px;
+    height: 46px;
+
+    position: relative;
+    bottom: 120px;
+    left: 1223px;
+    display: flex;
+    align-items: center;
+    color: #666;
+    font-size: 16px;
+    font-weight: 500;
+    line-height: 18px;
+    border-radius: 4px;
+    border: solid 1px #DCDCDC;
+    background-color: white;
+    img{
+        margin: 0 4px 0 8px;
+    }
 `
