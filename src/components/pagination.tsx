@@ -1,8 +1,8 @@
 import styled from "styled-components";
 import React, { useState } from "react";
-import { prevpage, nextpage, tennextpage } from "../assets/images/logos/arrows";
+import { prevpage, nextpage, fivenextpage } from "../assets/images/logos/arrows";
 
-export default function Pagination(pages: any) {
+export default function Paginations(pages: any) {
     const pageNumber = [];   //현재 페이지 숫자
 
     const [posts, setPosts] = useState([])
@@ -15,7 +15,15 @@ export default function Pagination(pages: any) {
     for (let i = 1; i <= numPages; i++) {
         pageNumber.push(i)
     }
-    const pagination = (pageProp: number) => {
+
+    const arrowMove = (pageProp: number) => {
+        if (pageProp < 1 || pageProp > numPages) return page;
+        else {
+            pages.query(pageProp);
+            pages.setCurrentPage(pageProp);
+        }
+    }
+    const numberMove = (pageProp: number) => {
         if (page === pageProp) return page
         else {
             pages.query(pageProp);
@@ -26,16 +34,12 @@ export default function Pagination(pages: any) {
 
     return (
         <PageNumberForm>
-            <img onClick={() => pages.setCurrentPage(page - 1)} alt="prevlogo" src={prevpage} />
-            <button onClick={() => pages.setCurrentPage(page - 1)} disabled={page === 1}>&lt;</button>
+            <img onClick={() => arrowMove(page - 1)} alt="prevlogo" src={prevpage} />
             {pageNumber.map((e) => (
-                <PageNumbers onClick={() => pagination(e)} active={e === page}>{e}</PageNumbers>
+                <PageNumbers onClick={() => numberMove(e)} active={e === page}>{e}</PageNumbers>
             ))}
-            <button onClick={() => pages.setCurrentPage(page + 1)} disabled={page === numPages}>
-                &gt;
-            </button>
-            <img alt="nextlogo" src={nextpage} />
-            <img alt="tennextlogo" src={tennextpage} />
+            <img onClick={() => arrowMove(page + 1)} alt="nextlogo" src={nextpage} />
+            <img alt="fivenextlogo" src={fivenextpage} />
         </PageNumberForm>
     )
 }
