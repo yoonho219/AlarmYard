@@ -3,18 +3,33 @@ import React from "react";
 import viewerlogo from "../assets/images/viewer.svg";
 import likeslogo from "../assets/images/likes.svg";
 
-export default function PostDetail() {
+export default function PostDetail(details: any) {
+    const { DateTime } = require("luxon");
+
+    const setNumber = (nums: number) => {
+        if (nums >= 1000 && nums < 1000000) {
+            return Math.round(nums / 100) / 10 + "k";
+        }
+        else if (nums >= 1000000 && nums < 1000000000) {
+            return Math.round(nums / 100000) / 10 + "m";
+        }
+        else if (nums >= 1000000000) {
+            return Math.round(nums / 100000000) / 10 + "b";
+        }
+        else return nums;
+    }
+
     return (
         <Details>
-            <div>KFIRI</div>
-            <div>2023.01.01</div>
+            <div>{details.writer}</div>
+            <div>{DateTime.fromMillis(details.createdAt).toFormat('yyyy.MM.dd')}</div>
             <div className="sort">
                 <img alt="viewer" src={viewerlogo} />
-                <div>88</div>
+                {details.viewCnt ? <div>{setNumber(details.viewCnt)}</div> : 0}
             </div>
             <div className="sort">
                 <img alt="likes" src={likeslogo} />
-                <div>88</div>
+                {details.likeCnt ? <div>{setNumber(details.likeCnt)}</div> : 0}
             </div>
         </Details>
     );
