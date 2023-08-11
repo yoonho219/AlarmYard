@@ -1,7 +1,6 @@
 import styled from "styled-components"
 import React, { useState } from "react"
 import PostDetail from "../../components/post-detail"
-import postimage from "../../assets/images/postimage.svg"
 import flielogo from "../../assets/images/filelogo.svg"
 import download from "../../assets/images/downloadlogo.svg"
 import { onlikelogo, offlikelogo, sharelogo, scraplogo, } from "../../assets/images/logos/functions"

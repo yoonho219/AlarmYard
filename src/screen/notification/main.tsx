@@ -1,76 +1,111 @@
 import { styled } from "styled-components";
 import search from "../../assets/images/searchlogo.svg"
 import fileslogo from "../../assets/images/filelogo.svg";
-import React from "react";
+import React, { useMemo, useState } from "react";
 import PostDetail from "../../components/post-detail";
-import PageNumber from "../../components/pagenumber";
+import Pagination from "../../components/pagination";
+import { useGetNotices } from "../../api";
 
-interface NoticeProps {
-    number: number,
-    title: string,
-    writer: string,
-    date: string,
-    viewer: number,
-    likes: number,
-    file: string,
+interface Notice {
+    id: string;
+    title: string;
+    category: string;
+    writer: {
+        id: string;
+        name: string;
+    },
+    createdAt: number,//Milliseconds
+    viewCnt: number,
+    likeCnt: number,
+    commentCnt: number,
+    file: [string] | null,
 }
 
-const noticeInfo = [
-    {
-        number: 50,
-        title: "[공고] [서울]",
-        writer: "KFIRI",
-        date: "2023.01.01",
-        viewer: 88,
-        likes: 88,
-        file: "[99+]",
-    },
-    {
-        number: 51,
-        title: "[공고] [경기]",
-        writer: "KFIRIs",
-        date: "2023.01.01",
-        viewer: 88,
-        likes: 88,
-        file: "[1]",
-    }, {
-        number: 52,
-        title: "[공고] [수원]",
-        writer: "KFIRISES",
-        date: "2023.01.01",
-        viewer: 88,
-        likes: 88,
-        file: "[11]",
-    },
-]
+interface INotices {
+    edges: Notice[], //검색된 공지
+    totalCnt: number, //총 공지 개수
+}
 
-export default function Main() {
+interface IQueryParams {
+    page?: number;
+    search?: string;
+}
+
+interface IUseNotices { loading: boolean, data: INotices | null, error: null, query: (params: IQueryParams) => void }
+
+export default function TestMain() {
+    const { loading, data, error, query } = useGetNotices() as unknown as IUseNotices;
+    const edges = useMemo(() => {
+        return data?.edges;
+    }, [data])
+
+    // 1. const edges = data.edges;
+    // 2. const edges = data -> edges;
+    // 3. const edges = null -> edges...??? 에러가 난다
+    // 4. const edges = data == null ? ... : ...
+    // 5. const edges = data?.edges = null;
+    // 6. const edges = data?.edges ?? []; 
+
+    const setComment = (comments: number) => {
+        if (comments > 99) {
+            return 99 + "+"
+        }
+        else return comments;
+    }
+
+    const [input, setInput] = useState('')
+    const [currentPage, setCurrentPage] = useState(1);
+    const searching = (e: React.ChangeEvent<HTMLInputElement>) => {
+        setInput(e.target.value);
+    }
     return (
         <>
             <TopLayout>
                 <span className="alarmyard">알림마당</span>
                 <span className="notification">공지사항</span>
                 <SearchBox>
-                    <Search placeholder="검색어를 입력해주세요." />
-                    <img alt="searchlogo" src={search} />
+                    <Search
+                        value={input}
+                        onChange={searching}
+                        placeholder="검색어를 입력해주세요."
+                    />
+                    <img onClick={() => {
+                        query({
+                            page: 3,
+                        })
+                    }} alt="searchlogo" src={search} />
                 </SearchBox>
             </TopLayout>
             <NotificationForm>
-                {noticeInfo.map((e: NoticeProps) => (
-                    <Notification>
-                        <Number>{e.number}</Number>
+                {!loading && edges ? edges.map((e: Notice) => ((
+                    < Notification >
+                        <Number>{e.id}</Number>
                         <div className="noticeTitle">
-                            <Title>
-                                <h4>{e.title}</h4>
-                                <img alt="filelogo" src={fileslogo} />
-                                <FileNumber>{e.file}</FileNumber>
-                            </Title>
-                            <PostDetail />
+                            <Titles>
+                                <div className="title">[{e.category}]{e.title}</div>
+                                {e.file ? <img alt="filelogo" src={fileslogo} /> : ""}
+                                {e.commentCnt ?
+                                    <CommentNumber>[{setComment(e.commentCnt)}]</CommentNumber> : ""}
+                            </Titles>
+                            <PostDetail
+                                writer={e.writer.name}
+                                createdAt={e.createdAt}
+                                viewCnt={e.viewCnt}
+                                likeCnt={e.likeCnt}
+                            />
                         </div>
-                    </Notification>
-                ))}
+                    </Notification>)))
+                    : <div>로딩중</div>}
             </NotificationForm >
-            <PageNumber />
+            <PageNumberForm>
+                <Pagination
+                    query={query}
+                    total={data?.edges.length}
+                    postCount={data?.totalCnt}
+                    currentPage={currentPage}
+                    setCurrentPage={setCurrentPage}
+                />
+            </PageNumberForm>
         </>
     )
 }
@@ -85,7 +120,6 @@ const TopLayout = styled.div`
         text-align: center;
         font-feature-settings: 'clig' off, 'liga' off;
         font-family: Pretendard;
-        font-style: normal;
     }
     .alarmyard{
         margin-top: 60px;
@@ -133,7 +167,6 @@ const NotificationForm = styled.div`
     margin: 0 auto;
     width: 1240px;
     border-top: solid 1px #333;
-    flex-shrink: 0;
 `
 const Notification = styled.div`
     width: 1240px;
@@ -148,39 +181,58 @@ const Notification = styled.div`
     .noticeTitle{
         margin-left: 99px;
     }
-    h4{
-        cursor: pointer;
-        margin: 0;
-        color: #333;
-        font-family: Pretendard;
-        font-size: 20px;
-        font-style: normal;
-        font-weight: 500;
-        line-height: 20px;
-    }
 `
 const Number = styled.div`
     color: #888;
     font-family: Pretendard;
     font-size: 18px;
-    font-style: normal;
     font-weight: 600;
     line-height: 18px;
     position: absolute;
 `
-const Title = styled.div`
-    display: inline-flex;
+const Titles = styled.div`
+    display: flex;
     align-items: center;
     gap: 10px;
-    img{
+    .title{
         cursor: pointer;
+        font-family: Pretendard;
+        font-size: 20px;
+        font-weight: 500;
+        line-height: 20px;
+        max-width: 1000px;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
     }
 `
-const FileNumber = styled.div`
+const Details = styled.div`
+    margin-top: 22px;
+    display: flex;
+    align-items: center;
+    color: #666666;
+    img{
+        margin-right: 4px;
+    }
+    .sort{
+        display: flex;
+    }
+    >div:not(:first-child){
+        border-left: solid 1px #D8DDE5;
+        line-height: 10px;
+        float: left;
+        margin-left: 12px;
+        padding-left: 12px;
+    }
+`
+const CommentNumber = styled.div`
     color: #193DD0;
     font-family: Pretendard;
     font-size: 14px;
-    font-style: normal;
     font-weight: 600;
     line-height: 18px;
+`
+
+const PageNumberForm = styled.div`
+    margin: 40px 0 100px 0;
 `
