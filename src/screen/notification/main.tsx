@@ -33,7 +33,7 @@ interface IQueryParams {
 
 interface IUseNotices { loading: boolean, data: INotices | null, error: null, query: (params: IQueryParams) => void }
 
-export default function TestMain() {
+export default function Main() {
     const { loading, data, error, query } = useGetNotices() as unknown as IUseNotices;
     const edges = useMemo(() => {
         return data?.edges;
@@ -55,7 +55,8 @@ export default function TestMain() {
 
     const [input, setInput] = useState('')
     const [currentPage, setCurrentPage] = useState(1);
-    const searching = (e: React.ChangeEvent<HTMLInputElement>) => {
+
+    const searchInput = (e: React.ChangeEvent<HTMLInputElement>) => {
         setInput(e.target.value);
     }
     return (
@@ -66,14 +67,13 @@ export default function TestMain() {
                 <SearchBox>
                     <Search
                         value={input}
-                        onChange={searching}
+                        onChange={searchInput}
                         placeholder="검색어를 입력해주세요."
                     />
-                    <img onClick={() => {
-                        query({
-                            page: 3,
-                        })
-                    }} alt="searchlogo" src={search} />
+                    <img onClick={() => query({
+                        page: currentPage,
+                        search: `${input}`
+                    })} alt="searchlogo" src={search} />
                 </SearchBox>
             </TopLayout>
             <NotificationForm>
