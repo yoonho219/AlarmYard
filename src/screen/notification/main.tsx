@@ -38,13 +38,13 @@ export default function Main() {
     const edges = useMemo(() => {
         return data?.edges;
     }, [data])
-
     // 1. const edges = data.edges;
-    // 2. const edges = data -> edges;
-    // 3. const edges = null -> edges...??? 에러가 난다
-    // 4. const edges = data == null ? ... : ...
-    // 5. const edges = data?.edges = null;
-    // 6. const edges = data?.edges ?? []; 
+    
+    const [input, setInput] = useState('')
+
+    const [limit, setLimit] = useState(10); // 한 페이지에 보여줄 데이터의 개수
+    const [page, setPage] = useState(1); // 페이지 초기 값은 1페이지
+    const [blockNum, setBlockNum] = useState(0); // 한 페이지에 보여 줄 페이지네이션의 개수를 block으로 지정하는 state. 초기 값은 0
 
     const setComment = (comments: number) => {
         if (comments > 99) {
@@ -53,12 +53,24 @@ export default function Main() {
         else return comments;
     }
 
-    const [input, setInput] = useState('')
-    const [currentPage, setCurrentPage] = useState(1);
-
     const searchInput = (e: React.ChangeEvent<HTMLInputElement>) => {
         setInput(e.target.value);
     }
+    const clickSearch = () => {
+        setPage(1)
+        query({
+            page: page,
+            search: `${input}`,
+        })
+    }
+
+    const movePage = (page:number) => {
+        query({
+            page: page,
+        })
+        setPage(page)
+    }
+    
     return (
         <>
             <TopLayout>
@@ -70,10 +82,7 @@ export default function Main() {
                         onChange={searchInput}
                         placeholder="검색어를 입력해주세요."
                     />
-                    <img onClick={() => query({
-                        page: currentPage,
-                        search: `${input}`
-                    })} alt="searchlogo" src={search} />
+                    <img onClick={() => clickSearch()} alt="searchlogo" src={search} />
                 </SearchBox>
             </TopLayout>
             <NotificationForm>
@@ -94,17 +103,19 @@ export default function Main() {
                                 likeCnt={e.likeCnt}
                             />
                         </div>
-                    </Notification>)))
+                    </Notification>))) //FIXME : 페이지네이션 마지막칸 공지 없음
                     : <div>로딩중</div>}
             </NotificationForm >
             <PageNumberForm>
-                <Pagination
-                    query={query}
-                    total={data?.edges.length}
-                    postCount={data?.totalCnt}
-                    currentPage={currentPage}
-                    setCurrentPage={setCurrentPage}
-                />
+                {data ? 
+                    <Pagination
+                        limit={limit}
+                        page={page}
+                        blockNum={blockNum}
+                        setBlockNum={setBlockNum}
+                        counts={data?.totalCnt}
+                        movePage={movePage}
+                    /> : ""}
             </PageNumberForm>
         </>
     )
