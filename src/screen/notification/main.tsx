@@ -42,9 +42,9 @@ export default function Main() {
     
     const [input, setInput] = useState('')
 
-    const [limit, setLimit] = useState(10); // 한 페이지에 보여줄 데이터의 개수
-    const [page, setPage] = useState(1); // 페이지 초기 값은 1페이지
-    const [blockNum, setBlockNum] = useState(0); // 한 페이지에 보여 줄 페이지네이션의 개수를 block으로 지정하는 state. 초기 값은 0
+    const [limit, setLimit] = useState(10);     // 한 페이지에 보여줄 데이터의 개수
+    const [page, setPage] = useState(1);    // 페이지 초기 값은 1페이지
+    const [pageGroup, setPageGroup] = useState(0);    // 한 페이지에 보여 줄 페이지네이션의 개수를 block으로 지정하는 state. 초기 값은 0
 
     const setComment = (comments: number) => {
         if (comments > 99) {
@@ -111,8 +111,8 @@ export default function Main() {
                     <Pagination
                         limit={limit}
                         page={page}
-                        blockNum={blockNum}
-                        setBlockNum={setBlockNum}
+                        pageGroup={pageGroup}
+                        setPageGroup={setPageGroup}
                         counts={data?.totalCnt}
                         movePage={movePage}
                     /> : ""}
