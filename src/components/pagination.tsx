@@ -1,45 +1,78 @@
 import styled from "styled-components";
-import React, { useState } from "react";
-import { prevpage, nextpage, fivenextpage } from "../assets/images/logos/arrows";
+import React from "react";
+import { prevpage, nextpage, gofirst, golast } from "../assets/images/logos/arrows";
 
-export default function Paginations(pages: any) {
-    const pageNumber = [];   //현재 페이지 숫자
+export default function Paginations({
+    limit,
+    page,
+    pageGroup,
+    setPageGroup,
+    counts,
+    movePage,
+}: {
+    limit: number,
+    page: number,
+    pageGroup: number,
+    setPageGroup: Function,
+    counts: number,
+    movePage:Function,
+}) {
+    const createArr = (n: number) => {
+        const iArr: number[] = new Array(n);
+        for (let i = 0; i < n; i++) iArr[i] = i + 1;
+        return iArr;
+    }   //새로운 배열 만들 함수
 
-    const [posts, setPosts] = useState([])
-    const page = pages.currentPage;    //현재 페이지
-    const [limit, setLimit] = useState(10)  //페이지당 게시물 수
-    const offset = (page - 1) * limit;      //해당 페이지에 보일 게시물
-    const total = pages.postCount;     //게시물 총 개수
-    const numPages = Math.ceil(total / limit);   //페이지 총 개수
+    const pageLimit = 5;
+    const totalPage = Math.ceil(counts / limit);
+    const pageGroupIdx = Number(pageGroup * pageLimit);   //페이지네이션 개수 구역
 
-    for (let i = 1; i <= numPages; i++) {
-        pageNumber.push(i)
+    const totalPageArr = createArr(Number(totalPage));  // totalPageArr 함수에 전체 페이지의 개수를 배열로
+    let pArr = totalPageArr.slice(pageGroupIdx, Number(pageLimit) + pageGroupIdx);
+
+    const firstPage = () => {
+        if (page <= 1) {
+            return;
+        }
+        movePage(1);
+        setPageGroup(0);
+    }
+    const lastPage = () => {
+        if (page >= totalPage) {
+            return;
+        }
+        movePage(totalPage);
+        setPageGroup(Math.ceil(totalPage / pageLimit) - 1);
     }
 
-    const arrowMove = (pageProp: number) => {
-        if (pageProp < 1 || pageProp > numPages) return page;
-        else {
-            pages.query(pageProp);
-            pages.setCurrentPage(pageProp);
+    const prevPage = () => {
+        if (page <= 1) {
+            return;
         }
+        if (page - 1 <= pageLimit * pageGroup) {
+            setPageGroup((n: number) => n - 1);
+        }
+        movePage((n: number) => n - 1);
     }
-    const numberMove = (pageProp: number) => {
-        if (page === pageProp) return page
-        else {
-            pages.query(pageProp);
-            pages.setCurrentPage(pageProp);
+    const nextPage = () => {
+        if (page >= totalPage) {
+            return;
         }
-        console.log(total)
+        if (pageLimit * Number(pageGroup * 1) < Number(page + 1)) {
+            setPageGroup((n: number) => n + 1);
+        }
+        movePage((n: number) => n + 1);
     }
 
     return (
         <PageNumberForm>
-            <img onClick={() => arrowMove(page - 1)} alt="prevlogo" src={prevpage} />
-            {pageNumber.map((e) => (
-                <PageNumbers onClick={() => numberMove(e)} active={e === page}>{e}</PageNumbers>
+            <img onClick={() => firstPage()} alt="gofirstlogo" src={gofirst} />
+            <img onClick={() => prevPage()} alt="prevlogo" src={prevpage} />
+            {pArr.map((n:number) => (
+                <PageNumbers onClick={() => movePage(n)} active={n === page}>{n}</PageNumbers>
             ))}
-            <img onClick={() => arrowMove(page + 1)} alt="nextlogo" src={nextpage} />
-            <img alt="fivenextlogo" src={fivenextpage} />
+            <img onClick={() => nextPage()} alt="nextlogo" src={nextpage} />
+            <img onClick={() => lastPage()} alt="golastlogo" src={golast} />
         </PageNumberForm>
     )
 }
