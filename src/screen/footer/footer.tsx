@@ -100,11 +100,7 @@ const TextWrapper = styled.div`
                 font-weight: 700;
                 line-height: 16px;
                 span{
-                    color: #444;
-                    font-size: 10px;
-                    font-style: normal;
                     font-weight: 300;
-                    line-height: 16px;
                     margin-left: 3px;
                 }
             }
