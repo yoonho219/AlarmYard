@@ -5,6 +5,7 @@ import React, { useMemo, useState } from "react";
 import PostDetail from "../../components/post-detail";
 import Pagination from "../../components/pagination";
 import { useGetNotices } from "../../api";
+import Title from "../../components/title";
 
 interface Notice {
     id: string;
@@ -20,12 +21,10 @@ interface Notice {
     commentCnt: number,
     file: [string] | null,
 }
-
 interface INotices {
     edges: Notice[], //검색된 공지
     totalCnt: number, //총 공지 개수
 }
-
 interface IQueryParams {
     page?: number;
     search?: string;
@@ -38,13 +37,13 @@ export default function Main() {
     const edges = useMemo(() => {
         return data?.edges;
     }, [data])
-    // 1. const edges = data.edges;
-    
+
     const [input, setInput] = useState('')
 
-    const [limit, setLimit] = useState(10);     // 한 페이지에 보여줄 데이터의 개수
     const [page, setPage] = useState(1);    // 페이지 초기 값은 1페이지
-    const [pageGroup, setPageGroup] = useState(0);    // 한 페이지에 보여 줄 페이지네이션의 개수를 block으로 지정하는 state. 초기 값은 0
+    const [limit, setLimit] = useState(10);     // 한 페이지에 보여줄 데이터의 개수
+    /*useState 사용 안 하고 */
+    const [pageGroup, setPageGroup] = useState(0);
 
     const setComment = (comments: number) => {
         if (comments > 99) {
@@ -53,41 +52,34 @@ export default function Main() {
         else return comments;
     }
 
-    const searchInput = (e: React.ChangeEvent<HTMLInputElement>) => {
-        setInput(e.target.value);
-    }
     const clickSearch = () => {
         setPage(1)
+        setPageGroup(0)
         query({
-            page: page,
+            page: 1,
             search: `${input}`,
         })
     }
 
     const movePage = (page:number) => {
+        setPage(page)
         query({
             page: page,
+            search: `${input}`
         })
-        setPage(page)
     }
-    
+
     return (
         <>
-            <TopLayout>
-                <span className="alarmyard">알림마당</span>
-                <span className="notification">공지사항</span>
-                <SearchBox>
-                    <Search
-                        value={input}
-                        onChange={searchInput}
-                        placeholder="검색어를 입력해주세요."
-                    />
-                    <img onClick={() => clickSearch()} alt="searchlogo" src={search} />
-                </SearchBox>
-            </TopLayout>
+            <Title
+                input={input}
+                clickSearch={clickSearch}
+                setInput={setInput}
+                state={true}
+            />
             <NotificationForm>
                 {!loading && edges ? edges.map((e: Notice) => ((
-                    < Notification >
+                    <Notification>
                         <Number>{e.id}</Number>
                         <div className="noticeTitle">
                             <Titles>
@@ -103,7 +95,7 @@ export default function Main() {
                                 likeCnt={e.likeCnt}
                             />
                         </div>
-                    </Notification>))) //FIXME : 페이지네이션 마지막칸 공지 없음
+                    </Notification>)))
                     : <div>로딩중</div>}
             </NotificationForm >
             <PageNumberForm>
@@ -215,25 +207,6 @@ const Titles = styled.div`
         white-space: nowrap;
         overflow: hidden;
         text-overflow: ellipsis;
-    }
-`
-const Details = styled.div`
-    margin-top: 22px;
-    display: flex;
-    align-items: center;
-    color: #666666;
-    img{
-        margin-right: 4px;
-    }
-    .sort{
-        display: flex;
-    }
-    >div:not(:first-child){
-        border-left: solid 1px #D8DDE5;
-        line-height: 10px;
-        float: left;
-        margin-left: 12px;
-        padding-left: 12px;
     }
 `
 const CommentNumber = styled.div`
