@@ -3,33 +3,40 @@ import React from "react";
 import viewerlogo from "../assets/images/viewer.svg";
 import likeslogo from "../assets/images/likes.svg";
 
-export default function PostDetail(details: any) {
+interface detailType{
+    writer: string;
+    createdAt: number;
+    viewCnt: number;
+    likeCnt: number;
+}
+
+export default function PostDetail({
+    writer,
+    createdAt,
+    viewCnt,
+    likeCnt,
+}: detailType) {
     const { DateTime } = require("luxon");
 
-    const setNumber = (nums: number) => {
-        if (nums >= 1000 && nums < 1000000) {
-            return Math.round(nums / 100) / 10 + "k";
-        }
-        else if (nums >= 1000000 && nums < 1000000000) {
-            return Math.round(nums / 100000) / 10 + "m";
-        }
-        else if (nums >= 1000000000) {
-            return Math.round(nums / 100000000) / 10 + "b";
-        }
-        else return nums;
-    }
+    const setNumber = (cnt: number) => {
+        return (
+        new Intl.NumberFormat('en-US', {
+            notation: 'compact',
+            maximumFractionDigits: 1,
+        }).format(cnt)
+    )}
 
     return (
         <Details>
-            <div>{details.writer}</div>
-            <div>{DateTime.fromMillis(details.createdAt).toFormat('yyyy.MM.dd')}</div>
+            <div>{writer}</div>
+            <div>{DateTime.fromMillis(createdAt).toFormat('yyyy.MM.dd')}</div>
             <div className="sort">
                 <img alt="viewer" src={viewerlogo} />
-                {details.viewCnt ? <div>{setNumber(details.viewCnt)}</div> : 0}
+                <div>{setNumber(viewCnt)}</div>
             </div>
             <div className="sort">
                 <img alt="likes" src={likeslogo} />
-                {details.likeCnt ? <div>{setNumber(details.likeCnt)}</div> : 0}
+                <div>{setNumber(likeCnt)}</div>
             </div>
         </Details>
     );
