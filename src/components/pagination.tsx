@@ -2,33 +2,46 @@ import styled from "styled-components";
 import React from "react";
 import { prevpage, nextpage, gofirst, golast } from "../assets/images/logos/arrows";
 
-export default function Paginations({
+/** 
+ * 페이지네이션 props 타입 
+*/
+interface IPaginationProps {
+    /** 기본개수  */
+    limit: number,
+    /** 현재 페이지 */
+    page: number,
+    pageGroup: number,
+    setPageGroup: (num:number)=>void,
+    counts: number,
+    movePage:(num:number)=>void,
+}
+
+/**
+ * 페이지네이션 컴포넌트
+ * @param {IPaginationProps} props  
+ * @returns {React.ReactNode} node
+ */
+export default function Pagination({
     limit,
     page,
     pageGroup,
     setPageGroup,
     counts,
     movePage,
-}: {
-    limit: number,
-    page: number,
-    pageGroup: number,
-    setPageGroup: Function,
-    counts: number,
-    movePage:Function,
-}) {
+}: IPaginationProps) {
     const createArr = (n: number) => {
-        const iArr: number[] = new Array(n);
+        const iArr:number[] = new Array(n);
         for (let i = 0; i < n; i++) iArr[i] = i + 1;
         return iArr;
-    }   //새로운 배열 만들 함수
+    }
 
     const pageLimit = 5;
-    const totalPage = Math.ceil(counts / limit);
-    const pageGroupIdx = Number(pageGroup * pageLimit);   //페이지네이션 개수 구역
+    const pageGroupIdx = pageGroup * pageLimit;
 
-    const totalPageArr = createArr(Number(totalPage));  // totalPageArr 함수에 전체 페이지의 개수를 배열로
-    let pArr = totalPageArr.slice(pageGroupIdx, Number(pageLimit) + pageGroupIdx);
+    const totalPage = Math.ceil(counts / limit);
+    const totalPageArr = createArr(totalPage);
+
+    let pArr = totalPageArr.slice(pageGroupIdx, pageLimit + pageGroupIdx);
 
     const firstPage = () => {
         if (page <= 1) {
@@ -50,18 +63,18 @@ export default function Paginations({
             return;
         }
         if (page - 1 <= pageLimit * pageGroup) {
-            setPageGroup((n: number) => n - 1);
+            setPageGroup(pageGroup-1);
         }
-        movePage((n: number) => n - 1);
+        movePage(page - 1);
     }
     const nextPage = () => {
         if (page >= totalPage) {
             return;
         }
-        if (pageLimit * Number(pageGroup * 1) < Number(page + 1)) {
-            setPageGroup((n: number) => n + 1);
+        if (pageLimit * (pageGroup + 1) < (page + 1)) {
+            setPageGroup(pageGroup+1);
         }
-        movePage((n: number) => n + 1);
+        movePage(page + 1);
     }
 
     return (
