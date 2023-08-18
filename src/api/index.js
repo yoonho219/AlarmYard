@@ -18,17 +18,17 @@ export function useGetNotices() {
     const generateRows = useCallback((search = "") => {
         // const
         return Array.from({ length: limit }).map((_, index) => ({
-            id: faker.number.int({ min: 0, max: 100 }),
+            id: faker.string.uuid(),
             title: faker.lorem.words({ min: 10, max: 30 }) + search,
             category: faker.lorem.word({ length: 3 }),
             writer: {
                 id: faker.string.uuid(),
-                name: faker.person.fullName(),  
+                name: faker.person.fullName(),
             },
             createdAt: faker.date.past().getTime(),
-            viewCnt: faker.number.int({ min: 0, max: 10000 }),
+            viewCnt: faker.number.int({ min: 0, max: 100000 }),
             likeCnt: faker.number.int({ min: 0, max: 100000 }),
-            commentCnt: faker.number.int({ min: 0, max: 150 }),
+            commentCnt: faker.number.int({ min: 0, max: 100 }),
             file: faker.datatype.boolean()
                 ? [
                     faker.image.urlLoremFlickr({ category: "cat" }),
@@ -94,13 +94,56 @@ export function useGetNotices() {
     return result;
 }
 
-export function useGetNotice() {
+/**
+ * 특정 공지 상세정보 가져오기
+ * @param {id:string} props
+ * @returns
+ */
+export function useGetNotice(props) {
     const [result, setResult] = useState({
         loading: true,
         data: null,
         error: null,
-        query: (param) => { }
+        refetch: () => { },
     });
+
+    const refetch = () => {
+        setResult({
+            loading: true,
+            data: null,
+            error: null,
+            refetch: refetch,
+        });
+        setTimeout(() => {
+            setResult({
+                loading: false,
+                data: {
+                    id: faker.string.uuid(),
+                    title: faker.lorem.words({ min: 10, max: 30 }),
+                    content: `<div>${faker.lorem.words({ min: 100, max: 1000 })}</div>`,
+                    category: faker.lorem.word({ length: 3 }),
+                    writer: {
+                        id: faker.string.uuid(),
+                        name: faker.person.fullName(),
+                    },
+                    createdAt: faker.date.past().getTime(),
+                    viewCnt: faker.number.int({ min: 0, max: 100000 }),
+                    likeCnt: faker.number.int({ min: 0, max: 100000 }),
+                    commentCnt: faker.number.int({ min: 0, max: 100 }),
+                    file: faker.datatype.boolean()
+                        ? [
+                            faker.image.urlLoremFlickr({ category: "cat" }),
+                            faker.image.urlLoremFlickr({ category: "cat" }),
+                        ]
+                        : null,
+                    isLike: faker.datatype.boolean(),
+                    isScrap: faker.datatype.boolean(),
+                },
+                error: null,
+                refetch: refetch,
+            });
+        }, 2000)
+    };
 
     useEffect(() => {
         setTimeout(() => {
@@ -115,7 +158,7 @@ export function useGetNotice() {
                         id: faker.string.uuid(),
                         name: faker.person.fullName(),
                     },
-                    createdAt: faker.date.past().getMilliseconds(),
+                    createdAt: faker.date.past().getTime(),
                     viewCnt: faker.number.int({ min: 0, max: 100000 }),
                     likeCnt: faker.number.int({ min: 0, max: 100000 }),
                     commentCnt: faker.number.int({ min: 0, max: 100 }),
@@ -129,6 +172,7 @@ export function useGetNotice() {
                     isScrap: faker.datatype.boolean(),
                 },
                 error: null,
+                refetch: refetch,
             });
         }, 2000);
     }, []);
