@@ -2,8 +2,8 @@ import styled from "styled-components";
 import React from "react";
 import viewerlogo from "../assets/images/viewer.svg";
 import likeslogo from "../assets/images/likes.svg";
-
-interface detailType{
+import { DateTime } from "luxon";
+interface detailType {
     writer: string;
     createdAt: number;
     viewCnt: number;
@@ -16,15 +16,14 @@ export default function PostDetail({
     viewCnt,
     likeCnt,
 }: detailType) {
-    const { DateTime } = require("luxon");
-
     const setNumber = (cnt: number) => {
         return (
-        new Intl.NumberFormat('en-US', {
-            notation: 'compact',
-            maximumFractionDigits: 1,
-        }).format(cnt)
-    )}
+            new Intl.NumberFormat('en-US', {
+                notation: 'compact',
+                maximumFractionDigits: 1,
+            }).format(cnt)
+        )
+    }
 
     return (
         <Details>
