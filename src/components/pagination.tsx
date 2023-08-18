@@ -1,6 +1,7 @@
 import styled from "styled-components";
 import React from "react";
 import { prevpage, nextpage, gofirst, golast } from "../assets/images/logos/arrows";
+import { Link } from "react-router-dom";
 
 /** 
  * 페이지네이션 props 타입 
@@ -11,9 +12,12 @@ interface IPaginationProps {
     /** 현재 페이지 */
     page: number,
     pageGroup: number,
-    setPageGroup: (num:number)=>void,
+    setPageGroup: (num: number) => void,
     counts: number,
-    movePage:(num:number)=>void,
+    movePage: (num: number) => void,
+
+    input?: string,
+    searched?: boolean,
 }
 
 /**
@@ -28,19 +32,20 @@ export default function Pagination({
     setPageGroup,
     counts,
     movePage,
+
+    input = "",
+    searched = false,
 }: IPaginationProps) {
     const createArr = (n: number) => {
-        const iArr:number[] = new Array(n);
+        const iArr: number[] = new Array(n);
         for (let i = 0; i < n; i++) iArr[i] = i + 1;
         return iArr;
     }
 
     const pageLimit = 5;
     const pageGroupIdx = pageGroup * pageLimit;
-
     const totalPage = Math.ceil(counts / limit);
     const totalPageArr = createArr(totalPage);
-
     let pArr = totalPageArr.slice(pageGroupIdx, pageLimit + pageGroupIdx);
 
     const firstPage = () => {
@@ -57,13 +62,12 @@ export default function Pagination({
         movePage(totalPage);
         setPageGroup(Math.ceil(totalPage / pageLimit) - 1);
     }
-
     const prevPage = () => {
         if (page <= 1) {
             return;
         }
         if (page - 1 <= pageLimit * pageGroup) {
-            setPageGroup(pageGroup-1);
+            setPageGroup(pageGroup - 1);
         }
         movePage(page - 1);
     }
@@ -72,24 +76,27 @@ export default function Pagination({
             return;
         }
         if (pageLimit * (pageGroup + 1) < (page + 1)) {
-            setPageGroup(pageGroup+1);
+            setPageGroup(pageGroup + 1);
         }
         movePage(page + 1);
     }
 
     return (
-        <PageNumberForm>
-            <img onClick={() => firstPage()} alt="gofirstlogo" src={gofirst} />
+        <PageNumberForm first={page === 1} last={page === totalPage}>
+            <img onClick={() => firstPage()} alt="gofirstlogo" src={gofirst} className="firstBtn" />
             <img onClick={() => prevPage()} alt="prevlogo" src={prevpage} />
-            {pArr.map((n:number) => (
-                <PageNumbers onClick={() => movePage(n)} active={n === page}>{n}</PageNumbers>
-            ))}
+            {pArr.map((n: number) => (
+                <Link to={searched ? `?page=${n}&search=${input}` : `?page=${n}`} style={{ textDecoration: "none" }}>//ASK
+                    <PageNumbers onClick={() => movePage(n)} active={n === page}>{n}</PageNumbers>
+                </Link>
+            ))
+            }
             <img onClick={() => nextPage()} alt="nextlogo" src={nextpage} />
-            <img onClick={() => lastPage()} alt="golastlogo" src={golast} />
-        </PageNumberForm>
+            <img onClick={() => lastPage()} alt="golastlogo" src={golast} className="lastBtn" />
+        </PageNumberForm >
     )
 }
-const PageNumberForm = styled.div`
+const PageNumberForm = styled.div < { first: boolean, last: boolean }>`
     width: 100%;
     display: flex;
     justify-content: center;
@@ -97,6 +104,12 @@ const PageNumberForm = styled.div`
     gap: 5px;
     img{
         cursor: pointer;
+    }
+    .firstBtn{
+        visibility: ${page => page.first && "hidden"};
+    }
+    .lastBtn{
+        visibility: ${page => page.last && "hidden"};
     }
 `
 const PageNumbers = styled.div<{ active: boolean }>`
