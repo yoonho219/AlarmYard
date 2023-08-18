@@ -6,17 +6,21 @@ import Footer from './screen/footer/footer';
 import Inquire from './screen/inquire';
 import Main from './screen/notification/main';
 import Individual from './screen/notification/individual';
+import { Route, Routes } from 'react-router-dom';
 
 function App() {
-  return (
-    <>
-      <Header />
-      <Layout>
-        <Inquire />
-      </Layout>
-      <Footer />
-    </>
-  );
+    return (
+        <>
+            <Header />
+            <Layout />
+            <Routes>
+                <Route path='/' element={<Main />} />
+                <Route path="/post/:id" element={<Individual />} />
+                <Route path='QnA' element={<Inquire />} />
+            </Routes >
+            <Footer />
+        </>
+    );
 }
 
 const Layout = styled.div`
