@@ -1,21 +1,28 @@
 import styled from "styled-components";
 import React from "react";
 import search from "../assets/images/searchlogo.svg"
+import { Link } from "react-router-dom";
 
-interface ITitleProps{
+interface ITitleProps {
     input?: string,
     clickSearch?: Function,
     setInput?: (str: string) => void,
     /**검색창 여부 */
-    state:boolean,
+    state: boolean,
+    searched?: boolean,
 }
 
 export default function Title({
-    input="",
+    input = "",
     clickSearch,
     setInput,
     state,
+    searched = false,
 }: ITitleProps) {
+    localStorage.setItem('input', input);
+    const searchHistory = localStorage.getItem('input');
+    if (searched) {
+    }
     const searchInput = (e: React.ChangeEvent<HTMLInputElement>) => {
         setInput && setInput(e.target.value);
     }
@@ -31,8 +38,10 @@ export default function Title({
                         onChange={searchInput}
                         placeholder="검색어를 입력해주세요."
                     />
-                    {clickSearch &&
-                        <img onClick={() => clickSearch()} alt="searchlogo" src={search} />}
+                    <Link to={input ? `?page=1&search=${input}` : ""}>
+                        {clickSearch &&
+                            <img onClick={() => clickSearch()} alt="searchlogo" src={search} />}
+                    </Link>
                 </SearchBox>}
         </TopLayout>
     )
@@ -78,6 +87,7 @@ const SearchBox = styled.div`
         cursor: pointer;
         width: 24px;
         position: absolute;
+        top: 13px;
         right: 24px;
     }
 `
