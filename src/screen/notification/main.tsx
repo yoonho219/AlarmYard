@@ -1,11 +1,11 @@
 import { styled } from "styled-components";
-import search from "../../assets/images/searchlogo.svg"
 import fileslogo from "../../assets/images/filelogo.svg";
 import React, { useMemo, useState } from "react";
 import PostDetail from "../../components/post-detail";
 import Pagination from "../../components/pagination";
 import { useGetNotices } from "../../api";
 import Title from "../../components/title";
+import { Link } from "react-router-dom";
 
 interface Notice {
     id: string;
@@ -39,11 +39,11 @@ export default function Main() {
     }, [data])
 
     const [input, setInput] = useState('')
-
     const [page, setPage] = useState(1);    // 페이지 초기 값은 1페이지
     const [limit, setLimit] = useState(10);     // 한 페이지에 보여줄 데이터의 개수
     /*useState 사용 안 하고 */
     const [pageGroup, setPageGroup] = useState(0);
+    const [searched, setSearched] = useState(false);
 
     const setComment = (comments: number) => {
         if (comments > 99) {
@@ -59,16 +59,30 @@ export default function Main() {
             page: 1,
             search: `${input}`,
         })
+        setSearched(true);
     }
 
-    const movePage = (page:number) => {
+    const movePage = (page: number) => {
         setPage(page)
-        query({
-            page: page,
-            search: `${input}`
-        })
+        if (searched) {
+            query({
+                page: page,
+                search: `${input}`
+            })
+        }
+        else {
+            query({
+                page: page,
+            })
+        }
     }
 
+    // let postNumber = [];
+    // if (data) {
+    //     for (let i = data.totalCnt; i > 0; i--) {
+    //         postNumber.push(i)
+    //     }
+    // }
     return (
         <>
             <Title
@@ -76,30 +90,33 @@ export default function Main() {
                 clickSearch={clickSearch}
                 setInput={setInput}
                 state={true}
+                searched={searched}
             />
             <NotificationForm>
                 {!loading && edges ? edges.map((e: Notice) => ((
-                    <Notification>
-                        <Number>{e.id}</Number>
-                        <div className="noticeTitle">
-                            <Titles>
-                                <div className="title">[{e.category}]{e.title}</div>
-                                {e.file ? <img alt="filelogo" src={fileslogo} /> : ""}
-                                {e.commentCnt ?
-                                    <CommentNumber>[{setComment(e.commentCnt)}]</CommentNumber> : ""}
-                            </Titles>
-                            <PostDetail
-                                writer={e.writer.name}
-                                createdAt={e.createdAt}
-                                viewCnt={e.viewCnt}
-                                likeCnt={e.likeCnt}
-                            />
-                        </div>
-                    </Notification>)))
+                    <Link to={`/post/:?${e.id}`} style={{ textDecoration: "none", color: "black" }}>//ASK
+                        <Notification>
+                            <Number>//ASK</Number>
+                            <div className="noticeTitle">
+                                <Titles>
+                                    <div className="title">[{e.category}]{e.title}</div>
+                                    {e.file ? <img alt="filelogo" src={fileslogo} /> : ""}
+                                    {e.commentCnt ?
+                                        <CommentNumber>[{setComment(e.commentCnt)}]</CommentNumber> : ""}
+                                </Titles>
+                                <PostDetail
+                                    writer={e.writer.name}
+                                    createdAt={e.createdAt}
+                                    viewCnt={e.viewCnt}
+                                    likeCnt={e.likeCnt}
+                                />
+                            </div>
+                        </Notification>
+                    </Link>)))
                     : <div>로딩중</div>}
             </NotificationForm >
             <PageNumberForm>
-                {data ? 
+                {data ?
                     <Pagination
                         limit={limit}
                         page={page}
@@ -107,6 +124,8 @@ export default function Main() {
                         setPageGroup={setPageGroup}
                         counts={data?.totalCnt}
                         movePage={movePage}
+                        input={input}
+                        searched={searched}
                     /> : ""}
             </PageNumberForm>
         </>
