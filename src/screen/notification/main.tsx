@@ -5,7 +5,9 @@ import PostDetail from "../../components/post-detail";
 import Pagination from "../../components/pagination";
 import { useGetNotices } from "../../api";
 import Title from "../../components/title";
-import { Link } from "react-router-dom";
+import { useRecoilState, useRecoilValue, useSetRecoilState } from "recoil";
+import { inputState, pageState } from "../../atoms";
+import { useNavigate } from "react-router-dom";
 
 interface Notice {
     id: string;
@@ -38,12 +40,21 @@ export default function Main() {
         return data?.edges;
     }, [data])
 
-    const [input, setInput] = useState('')
-    const [page, setPage] = useState(1);    // 페이지 초기 값은 1페이지
-    const [limit, setLimit] = useState(10);     // 한 페이지에 보여줄 데이터의 개수
-    /*useState 사용 안 하고 */
+    const navigate = useNavigate();
+
+    let pageArr: number[] = [];
+
+    const [input, setInput] = useRecoilState(inputState)
+    const [page, setPage] = useRecoilState(pageState);
+    const [limit, setLimit] = useState(10);
     const [pageGroup, setPageGroup] = useState(0);
     const [searched, setSearched] = useState(false);
+
+    const pageAtom = useSetRecoilState(pageState);
+
+    const inputAtom = useSetRecoilState(inputState);
+    const setInputAtom = (e?: string) => inputAtom(() => [e]);
+    const onInput = useRecoilValue(inputState)
 
     const setComment = (comments: number) => {
         if (comments > 99) {
@@ -62,8 +73,12 @@ export default function Main() {
         setSearched(true);
     }
 
-    const movePage = (page: number) => {
+    const callPage = (page: number) => {
         setPage(page)
+        pageAtom(page)
+        searched
+            ? navigate(`?page=${page}&search=${input}`)
+            : navigate(`?page=${page}`)
         if (searched) {
             query({
                 page: page,
@@ -77,42 +92,47 @@ export default function Main() {
         }
     }
 
-    // let postNumber = [];
-    // if (data) {
-    //     for (let i = data.totalCnt; i > 0; i--) {
-    //         postNumber.push(i)
-    //     }
-    // }
+    const clickPost = (id: string) => {
+        window.location.href = `/post/:?${id}`
+        if (!searched) {
+            setInputAtom()
+        }
+    }
+
+    if (data?.totalCnt) {
+        for (let i = data?.totalCnt; i > 0; i--) {
+            pageArr.push(i)
+        }
+    }
+    
     return (
         <>
-            <Title
-                input={input}
-                clickSearch={clickSearch}
-                setInput={setInput}
-                state={true}
-                searched={searched}
-            />
+            {!loading &&
+                <Title
+                    input={input}
+                    clickSearch={clickSearch}
+                    setInput={setInput}
+                    state={true}
+                />}
             <NotificationForm>
-                {!loading && edges ? edges.map((e: Notice) => ((
-                    <Link to={`/post/:?${e.id}`} style={{ textDecoration: "none", color: "black" }}>//ASK
-                        <Notification>
-                            <Number>//ASK</Number>
-                            <div className="noticeTitle">
-                                <Titles>
-                                    <div className="title">[{e.category}]{e.title}</div>
-                                    {e.file ? <img alt="filelogo" src={fileslogo} /> : ""}
-                                    {e.commentCnt ?
-                                        <CommentNumber>[{setComment(e.commentCnt)}]</CommentNumber> : ""}
-                                </Titles>
-                                <PostDetail
-                                    writer={e.writer.name}
-                                    createdAt={e.createdAt}
-                                    viewCnt={e.viewCnt}
-                                    likeCnt={e.likeCnt}
-                                />
-                            </div>
-                        </Notification>
-                    </Link>)))
+                {edges ? edges.map((e: Notice, i: number) => ((
+                    <Notification onClick={() => clickPost(e.id)}>
+                        <Number>{pageArr[i]}</Number>
+                        <div className="noticeTitle">
+                            <Titles>
+                                <div className="title">[{e.category}]{e.title}</div>
+                                {e.file ? <img alt="filelogo" src={fileslogo} /> : ""}
+                                {e.commentCnt ?
+                                    <CommentNumber>[{setComment(e.commentCnt)}]</CommentNumber> : ""}
+                            </Titles>
+                            <PostDetail
+                                writer={e.writer.name}
+                                createdAt={e.createdAt}
+                                viewCnt={e.viewCnt}
+                                likeCnt={e.likeCnt}
+                            />
+                        </div>
+                    </Notification>)))
                     : <div>로딩중</div>}
             </NotificationForm >
             <PageNumberForm>
@@ -123,68 +143,16 @@ export default function Main() {
                         pageGroup={pageGroup}
                         setPageGroup={setPageGroup}
                         counts={data?.totalCnt}
-                        movePage={movePage}
+                        callPage={callPage}
+                        navigate={navigate}
                         input={input}
                         searched={searched}
-                    /> : ""}
+                    />
+                    : ""}
             </PageNumberForm>
         </>
     )
 }
-
-const TopLayout = styled.div`
-    width: 100%;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    margin-bottom: 50px;
-    span{
-        text-align: center;
-        font-feature-settings: 'clig' off, 'liga' off;
-        font-family: Pretendard;
-    }
-    .alarmyard{
-        margin-top: 60px;
-        color: #666;
-        font-size: 18px;
-        font-weight: 500;
-        line-height: 18px;
-    }
-    .notification{
-        margin-top: 10px;
-        color: #333;
-        font-size: 30px;
-        font-weight: 700;
-        line-height: 30px;
-    }
-`
-const SearchBox = styled.div`
-    position: relative;
-    width: 460px;
-    height: 50px;
-    margin-top: 30px;
-    border: 1px solid #838383;
-    border-radius: 100px;
-    display: inline-flex;
-    justify-content: center;
-    flex-direction: column;
-    img{
-        cursor: pointer;
-        width: 24px;
-        position: absolute;
-        right: 24px;
-    }
-`
-const Search = styled.input`
-    width: 80%;
-    height: 100%;
-    gap: 10px;
-    font-size: 18px;
-    border: 0;
-    outline: none;
-    margin: 13px 0 13px 24px;
-`
-
 const NotificationForm = styled.div`
     margin: 0 auto;
     width: 1240px;
