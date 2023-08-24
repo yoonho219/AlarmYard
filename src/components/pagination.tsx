@@ -1,7 +1,6 @@
 import styled from "styled-components";
 import React from "react";
 import { prevpage, nextpage, gofirst, golast } from "../assets/images/logos/arrows";
-import { Link } from "react-router-dom";
 
 /** 
  * 페이지네이션 props 타입 
@@ -14,12 +13,12 @@ interface IPaginationProps {
     pageGroup: number,
     setPageGroup: (num: number) => void,
     counts: number,
-    movePage: (num: number) => void,
+    callPage: (num: number) => void,
+    navigate: (str: string) => void,
 
     input?: string,
     searched?: boolean,
 }
-
 /**
  * 페이지네이션 컴포넌트
  * @param {IPaginationProps} props  
@@ -31,72 +30,90 @@ export default function Pagination({
     pageGroup,
     setPageGroup,
     counts,
-    movePage,
+    callPage,
+    navigate,
 
     input = "",
     searched = false,
 }: IPaginationProps) {
-    const createArr = (n: number) => {
-        const iArr: number[] = new Array(n);
-        for (let i = 0; i < n; i++) iArr[i] = i + 1;
-        return iArr;
+    const pageLimit = 5;
+    const pageNumbers = [];
+    const totalPage = Math.ceil(counts / limit);
+    const startPage = Math.floor((page - 1) / pageLimit) * pageLimit + 1;
+    const endPage = startPage + pageLimit - 1 > totalPage
+        ? totalPage
+        : startPage + pageLimit - 1;
+
+    const lowerPage = page <= 1;
+    const higherPage = page >= totalPage;
+
+    const plusPage = page + 1;
+    const plusPageGroup = pageGroup + 1;
+    const pageConditions = pageLimit * (pageGroup + 1) < (page + 1);
+
+    const minusPage = page - 1;
+    const minusPageGroup = pageGroup - 1;
+    const pageCondition = page - 1 <= pageLimit * pageGroup;
+
+    const lastPageGroup = Math.ceil(totalPage / pageLimit) - 1
+
+    for (let i = startPage; i <= endPage; i++) {
+        pageNumbers.push(i)
     }
 
-    const pageLimit = 5;
-    const pageGroupIdx = pageGroup * pageLimit;
-    const totalPage = Math.ceil(counts / limit);
-    const totalPageArr = createArr(totalPage);
-    let pArr = totalPageArr.slice(pageGroupIdx, pageLimit + pageGroupIdx);
+    const movePage = (
+        condition: boolean,
+        movePageProp: number,
+        pageGroups?: number,
+        onePageGroup?: number,
+        pageCondition?: boolean,
+    ) => {
+        if (condition) {
+            return;
+        }
+        if (pageGroups === 0) {
+            setPageGroup(pageGroups)
+        }
+        if (pageGroups) {
+            setPageGroup(pageGroups)
+        }
+        if (pageCondition && onePageGroup) {
+            setPageGroup(onePageGroup)
+        }
+        callPage(movePageProp);
+
+        searched ?
+            navigate(`?page=${movePageProp}&search=${input}`)
+            : navigate(`?page=${movePageProp}`)
+    }
 
     const firstPage = () => {
-        if (page <= 1) {
-            return;
-        }
-        movePage(1);
-        setPageGroup(0);
-    }
-    const lastPage = () => {
-        if (page >= totalPage) {
-            return;
-        }
-        movePage(totalPage);
-        setPageGroup(Math.ceil(totalPage / pageLimit) - 1);
+        movePage(lowerPage, 1, 0)
     }
     const prevPage = () => {
-        if (page <= 1) {
-            return;
-        }
-        if (page - 1 <= pageLimit * pageGroup) {
-            setPageGroup(pageGroup - 1);
-        }
-        movePage(page - 1);
+        movePage(lowerPage, minusPage, undefined, minusPageGroup, pageCondition)
+    }
+    const lastPage = () => {
+        movePage(higherPage, totalPage, lastPageGroup)
     }
     const nextPage = () => {
-        if (page >= totalPage) {
-            return;
-        }
-        if (pageLimit * (pageGroup + 1) < (page + 1)) {
-            setPageGroup(pageGroup + 1);
-        }
-        movePage(page + 1);
+        movePage(higherPage, plusPage, undefined, plusPageGroup, pageConditions)
     }
 
     return (
-        <PageNumberForm first={page === 1} last={page === totalPage}>
-            <img onClick={() => firstPage()} alt="gofirstlogo" src={gofirst} className="firstBtn" />
-            <img onClick={() => prevPage()} alt="prevlogo" src={prevpage} />
-            {pArr.map((n: number) => (
-                <Link to={searched ? `?page=${n}&search=${input}` : `?page=${n}`} style={{ textDecoration: "none" }}>//ASK
-                    <PageNumbers onClick={() => movePage(n)} active={n === page}>{n}</PageNumbers>
-                </Link>
+        <PageNumberForm prev={page === 1} next={page === totalPage}>
+            <img onClick={() => firstPage()} alt="gofirstlogo" src={gofirst} className="prevBtn" />
+            <img onClick={() => prevPage()} alt="prevlogo" src={prevpage} className="prevBtn" />
+            {pageNumbers.map((n: number) => (
+                <PageNumbers onClick={() => callPage(n)} active={n === page}>{n}</PageNumbers>
             ))
             }
-            <img onClick={() => nextPage()} alt="nextlogo" src={nextpage} />
-            <img onClick={() => lastPage()} alt="golastlogo" src={golast} className="lastBtn" />
+            <img onClick={() => nextPage()} alt="nextlogo" src={nextpage} className="nextBtn" />
+            <img onClick={() => lastPage()} alt="golastlogo" src={golast} className="nextBtn" />
         </PageNumberForm >
     )
 }
-const PageNumberForm = styled.div < { first: boolean, last: boolean }>`
+const PageNumberForm = styled.div < { prev: boolean, next: boolean }>`
     width: 100%;
     display: flex;
     justify-content: center;
@@ -105,15 +122,16 @@ const PageNumberForm = styled.div < { first: boolean, last: boolean }>`
     img{
         cursor: pointer;
     }
-    .firstBtn{
-        visibility: ${page => page.first && "hidden"};
+    .prevBtn{
+        opacity: ${page => page.prev && ".2"};
+        cursor: ${page => page.prev && "default"};
     }
-    .lastBtn{
-        visibility: ${page => page.last && "hidden"};
+    .nextBtn{
+        opacity: ${page => page.next && ".2"};
+        cursor: ${page => page.next && "default"};
     }
 `
 const PageNumbers = styled.div<{ active: boolean }>`
-    cursor: pointer;
     width: 40px;
     height: 40px;
     text-align: center;
@@ -126,6 +144,7 @@ const PageNumbers = styled.div<{ active: boolean }>`
     color:${props => props.active ? "#5A33BE" : "#9A9A9A"};
     font-weight: ${props => props.active ? "800" : "600"};
     text-decoration-line: ${props => props.active ? "underline" : "none"};
+    cursor: ${props => props.active ? "default" : "pointer"};
     &:hover{
         color: #5A33BE;
         font-weight: 800;
