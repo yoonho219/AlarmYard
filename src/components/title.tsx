@@ -1,15 +1,13 @@
 import styled from "styled-components";
 import React from "react";
 import search from "../assets/images/searchlogo.svg"
-import { Link } from "react-router-dom";
 
 interface ITitleProps {
-    input?: string,
-    clickSearch?: Function,
-    setInput?: (str: string) => void,
     /**검색창 여부 */
     state: boolean,
-    searched?: boolean,
+    input?: string,
+    setInput?: (str: string) => void,
+    clickSearch?: () => void,
 }
 
 export default function Title({
@@ -17,11 +15,11 @@ export default function Title({
     clickSearch,
     setInput,
     state,
-    searched = false,
 }: ITitleProps) {
-    localStorage.setItem('input', input);
-    const searchHistory = localStorage.getItem('input');
-    if (searched) {
+    const enterSearch = (e: React.KeyboardEvent<HTMLInputElement>) => {
+        if (e.key === "Enter" && clickSearch) {
+            clickSearch();
+        }
     }
     const searchInput = (e: React.ChangeEvent<HTMLInputElement>) => {
         setInput && setInput(e.target.value);
@@ -36,12 +34,11 @@ export default function Title({
                     <Search
                         value={input}
                         onChange={searchInput}
+                        onKeyDown={enterSearch}
                         placeholder="검색어를 입력해주세요."
                     />
-                    <Link to={input ? `?page=1&search=${input}` : ""}>
-                        {clickSearch &&
-                            <img onClick={() => clickSearch()} alt="searchlogo" src={search} />}
-                    </Link>
+                    {clickSearch &&
+                        <img onClick={() => clickSearch()} alt="searchlogo" src={search} />}
                 </SearchBox>}
         </TopLayout>
     )
@@ -54,19 +51,18 @@ const TopLayout = styled.div`
     align-items: center;
     margin-bottom: 50px;
     span{
+        margin-top: 10px;
         text-align: center;
-        font-feature-settings: 'clig' off, 'liga' off;
         font-family: Pretendard;
     }
     .alarmyard{
-        margin-top: 60px;
+        margin-top: 50px;
         color: #666;
         font-size: 18px;
         font-weight: 500;
         line-height: 18px;
     }
     .notification{
-        margin-top: 10px;
         color: #333;
         font-size: 30px;
         font-weight: 700;
