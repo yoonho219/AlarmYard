@@ -4,9 +4,12 @@ import mainlogo from "../../assets/images/mainlogo.png";
 import alarm from "../../assets/images/alarmlogo.svg";
 import devide from "../../assets/images/divide1.svg";
 import hamberger from "../../assets/images/hamburger-button.svg";
-import { Link } from "react-router-dom";
 
 export default function Header() {
+    const goHome = () => {
+        window.location.href = "/";
+    }
+
     return (
         <Layout>
             <Top>
@@ -17,7 +20,7 @@ export default function Header() {
             </Top>
             <div className="Screen">
                 <div>
-                    <MainLogo alt="MainLogo" src={mainlogo} onClick={() => window.location.replace("/")} />
+                    <MainLogo alt="MainLogo" src={mainlogo} onClick={() => goHome()} />
                     <ul>
                         <li>한국외식산업연구원</li>
                         <li>외식정보</li>
