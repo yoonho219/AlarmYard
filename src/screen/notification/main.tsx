@@ -1,13 +1,11 @@
 import { styled } from "styled-components";
 import fileslogo from "../../assets/images/filelogo.svg";
-import React, { useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import PostDetail from "../../components/post-detail";
 import Pagination from "../../components/pagination";
 import { useGetNotices } from "../../api";
 import Title from "../../components/title";
-import { useRecoilState, useRecoilValue, useSetRecoilState } from "recoil";
-import { inputState, pageState } from "../../atoms";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 
 interface Notice {
     id: string;
@@ -39,22 +37,35 @@ export default function Main() {
     const edges = useMemo(() => {
         return data?.edges;
     }, [data])
-
     const navigate = useNavigate();
 
     let pageArr: number[] = [];
 
-    const [input, setInput] = useRecoilState(inputState)
-    const [page, setPage] = useRecoilState(pageState);
+    const [input, setInput] = useState('');
+    const [page, setPage] = useState(1)
     const [limit, setLimit] = useState(10);
     const [pageGroup, setPageGroup] = useState(0);
-    const [searched, setSearched] = useState(false);
+    const [searchParams, setSearchParams] = useSearchParams();
 
-    const pageAtom = useSetRecoilState(pageState);
+    const firstPage = 1;
+    const pageParam = searchParams.get('page')!;
+    const pages = parseInt(pageParam);
 
-    const inputAtom = useSetRecoilState(inputState);
-    const setInputAtom = (e?: string) => inputAtom(() => [e]);
-    const onInput = useRecoilValue(inputState)
+    const inputParam = searchParams.get('search')!;
+
+    var encode = encodeURI(input);
+    var decode = "";
+    if (inputParam !== null) {
+        decode = decodeURI(inputParam);
+    }
+
+    useEffect(() => {
+        setInput(decode)
+        query({
+            page: pages,
+            search: decode,
+        })
+    }, [query, pages, decode])
 
     const setComment = (comments: number) => {
         if (comments > 99) {
@@ -66,23 +77,31 @@ export default function Main() {
     const clickSearch = () => {
         setPage(1)
         setPageGroup(0)
+        searchParams.set('page', `${firstPage}`);
+        setSearchParams(searchParams)
         query({
             page: 1,
-            search: `${input}`,
+            search: input,
         })
-        setSearched(true);
+        if (input === "" || input === null) {
+            navigate('/');
+            return;
+        }
+        else {
+            searchParams.set('search', encode);
+            setSearchParams(searchParams)
+        }
     }
 
     const callPage = (page: number) => {
         setPage(page)
-        pageAtom(page)
-        searched
-            ? navigate(`?page=${page}&search=${input}`)
-            : navigate(`?page=${page}`)
-        if (searched) {
+        searchParams.set('page', `${page}`);
+        setSearchParams(searchParams)
+
+        if (input !== null) {
             query({
                 page: page,
-                search: `${input}`
+                search: input,
             })
         }
         else {
@@ -93,10 +112,7 @@ export default function Main() {
     }
 
     const clickPost = (id: string) => {
-        window.location.href = `/post/:?${id}`
-        if (!searched) {
-            setInputAtom()
-        }
+        navigate(`/post/${id}`)
     }
 
     if (data?.totalCnt) {
@@ -104,7 +120,7 @@ export default function Main() {
             pageArr.push(i)
         }
     }
-    
+
     return (
         <>
             {!loading &&
@@ -144,9 +160,7 @@ export default function Main() {
                         setPageGroup={setPageGroup}
                         counts={data?.totalCnt}
                         callPage={callPage}
-                        navigate={navigate}
                         input={input}
-                        searched={searched}
                     />
                     : ""}
             </PageNumberForm>
