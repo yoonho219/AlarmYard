@@ -5,7 +5,7 @@ import likeslogo from "../assets/images/likes.svg";
 import { DateTime } from "luxon";
 interface detailType {
     writer: string;
-    createdAt: number;
+    createdAt: string;
     viewCnt: number;
     likeCnt: number;
 }
@@ -28,7 +28,7 @@ export default function PostDetail({
     return (
         <Details>
             <div>{writer}</div>
-            <div>{DateTime.fromMillis(createdAt).toFormat('yyyy.MM.dd')}</div>
+            <div>{DateTime.fromISO(createdAt).toFormat('yyyy.MM.dd')}</div>
             <div className="sort">
                 <img alt="viewer" src={viewerlogo} />
                 <div>{setNumber(viewCnt)}</div>
