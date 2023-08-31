@@ -3,55 +3,92 @@ import fileslogo from "../../assets/images/filelogo.svg";
 import React, { useEffect, useMemo, useState } from "react";
 import PostDetail from "../../components/post-detail";
 import Pagination from "../../components/pagination";
-import { useGetNotices } from "../../api";
 import Title from "../../components/title";
 import { useNavigate, useSearchParams } from "react-router-dom";
+import { gql, useQuery } from "@apollo/client";
+import Highlight from "../../components/highlight";
 
-interface Notice {
+interface INotice {
     id: string;
-    title: string;
-    category: string;
-    writer: {
+    category: {
         id: string;
         name: string;
+    }
+    title: string;
+    file: {
+        id: string;
+    }
+    replyCount: number,
+    author: {
+        name: string;
     },
-    createdAt: number,//Milliseconds
+    createdAt: string,
     viewCnt: number,
     likeCnt: number,
-    commentCnt: number,
-    file: [string] | null,
 }
-interface INotices {
-    edges: Notice[], //검색된 공지
-    totalCnt: number, //총 공지 개수
-}
-interface IQueryParams {
-    page?: number;
-    search?: string;
+interface INode {
+    node: INotice,
 }
 
-interface IUseNotices { loading: boolean, data: INotices | null, error: null, query: (params: IQueryParams) => void }
-
+const GET_NOTICES_DATA = gql`
+query NoticePosts($first: Int, $offset: Int, $filter: [NoticePostFilterInput!]) {
+    noticePosts(first: $first, offset: $offset, filter: $filter) {
+        totalCount
+            edges {
+                node {
+                    id
+                    likeCnt
+                    author {
+                        email
+                        name
+                        nickname
+                    }
+                    createdAt
+                    category {
+                        name
+                        id
+                    }
+                    title
+                    viewCnt
+                    replyCount
+                    files {
+                        id
+                        url
+                    }
+                }
+            }
+        }
+    }
+`;
 export default function Main() {
-    const { loading, data, error, query } = useGetNotices() as unknown as IUseNotices;
-    const edges = useMemo(() => {
-        return data?.edges;
-    }, [data])
     const navigate = useNavigate();
 
-    let pageArr: number[] = [];
-
-    const [input, setInput] = useState('');
     const [page, setPage] = useState(1)
-    const [limit, setLimit] = useState(10);
+    const [input, setInput] = useState('');
     const [pageGroup, setPageGroup] = useState(0);
     const [searchParams, setSearchParams] = useSearchParams();
 
-    const firstPage = 1;
-    const pageParam = searchParams.get('page')!;
-    const pages = parseInt(pageParam);
-
+    const pageParam = parseInt(searchParams.get('page')!);
     const inputParam = searchParams.get('search')!;
+
+    const { loading, data } = useQuery(GET_NOTICES_DATA, {
+        variables: {
+            first: 10,
+            offset: 10 * (page - 1),
+            filter: {
+                title: inputParam ? [{
+                    value: `%${inputParam}%`,
+                    operator: "LIKE",
+                }] : []
+            }
+        }
+    });
+
+    const edges = useMemo(() => {
+        return data?.noticePosts?.edges;
+    }, [data])
+
+    let pageArr: number[] = [];
 
     var encode = encodeURI(input);
     var decode = "";
@@ -61,11 +98,16 @@ export default function Main() {
 
     useEffect(() => {
         setInput(decode)
-        query({
-            page: pages,
-            search: decode,
-        })
-    }, [query, pages, decode])
+    }, [decode])
+
+    useEffect(() => {
+        if (isNaN(pageParam)) {
+            setPage(1)
+        }
+        else {
+            setPage(pageParam)
+        }
+    }, [pageParam])
 
     const setComment = (comments: number) => {
         if (comments > 99) {
@@ -75,48 +117,28 @@ export default function Main() {
     }
 
     const clickSearch = () => {
-        setPage(1)
-        setPageGroup(0)
-        searchParams.set('page', `${firstPage}`);
-        setSearchParams(searchParams)
-        query({
-            page: 1,
-            search: input,
-        })
         if (input === "" || input === null) {
             navigate('/');
             return;
         }
-        else {
-            searchParams.set('search', encode);
-            setSearchParams(searchParams)
+        if (page !== 1) {
+            searchParams.set('page', '1')
         }
+        searchParams.set('search', encode);
+        setSearchParams(searchParams)
     }
 
-    const callPage = (page: number) => {
-        setPage(page)
+    const clickPage = (page: number) => {
         searchParams.set('page', `${page}`);
         setSearchParams(searchParams)
-
-        if (input !== null) {
-            query({
-                page: page,
-                search: input,
-            })
-        }
-        else {
-            query({
-                page: page,
-            })
-        }
     }
 
     const clickPost = (id: string) => {
-        navigate(`/post/${id}`)
+        navigate(`/${id}?${searchParams}`)
     }
 
-    if (data?.totalCnt) {
-        for (let i = data?.totalCnt; i > 0; i--) {
+    if (!loading && data.noticePosts) {
+        for (let i = data.noticePosts.totalCount - (page - 1) * 10; i > 0; i--) {
             pageArr.push(i)
         }
     }
@@ -125,42 +147,46 @@ export default function Main() {
         <>
             {!loading &&
                 <Title
+                    state={true}
                     input={input}
                     clickSearch={clickSearch}
                     setInput={setInput}
-                    state={true}
                 />}
             <NotificationForm>
-                {edges ? edges.map((e: Notice, i: number) => ((
-                    <Notification onClick={() => clickPost(e.id)}>
+                {edges ? edges.map((e: INode, i: number) => ((
+                    <Notification onClick={() => clickPost(e.node.id)}>
                         <Number>{pageArr[i]}</Number>
                         <div className="noticeTitle">
                             <Titles>
-                                <div className="title">[{e.category}]{e.title}</div>
-                                {e.file ? <img alt="filelogo" src={fileslogo} /> : ""}
-                                {e.commentCnt ?
-                                    <CommentNumber>[{setComment(e.commentCnt)}]</CommentNumber> : ""}
+                                <div className="title">
+                                    {e.node.category ? [e.node.category.name] : null}
+                                    {inputParam ?
+                                        Highlight(e.node.title, inputParam)
+                                        : e.node.title}
+                                </div>
+                                {e.node.file ? <img alt="filelogo" src={fileslogo} /> : ""}
+                                {e.node.replyCount ?
+                                    <CommentNumber>[{setComment(e.node.replyCount)}]</CommentNumber> : ""}
                             </Titles>
                             <PostDetail
-                                writer={e.writer.name}
-                                createdAt={e.createdAt}
-                                viewCnt={e.viewCnt}
-                                likeCnt={e.likeCnt}
+                                writer={e.node.author.name}
+                                createdAt={e.node.createdAt}
+                                viewCnt={e.node.viewCnt}
+                                likeCnt={e.node.likeCnt}
                             />
                         </div>
-                    </Notification>)))
+                    </Notification>
+                )))
                     : <div>로딩중</div>}
             </NotificationForm >
             <PageNumberForm>
-                {data ?
+                {edges ?
                     <Pagination
-                        limit={limit}
                         page={page}
                         pageGroup={pageGroup}
                         setPageGroup={setPageGroup}
-                        counts={data?.totalCnt}
-                        callPage={callPage}
-                        input={input}
+                        counts={data.noticePosts.totalCount}
+                        clickPage={clickPage}
                     />
                     : ""}
             </PageNumberForm>
