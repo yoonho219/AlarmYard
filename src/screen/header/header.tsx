@@ -4,23 +4,22 @@ import mainlogo from "../../assets/images/mainlogo.png";
 import alarm from "../../assets/images/alarmlogo.svg";
 import devide from "../../assets/images/divide1.svg";
 import hamberger from "../../assets/images/hamburger-button.svg";
+import { useNavigate } from "react-router-dom";
 
 export default function Header() {
-    const goHome = () => {
-        window.location.href = "/";
-    }
+    const navigate = useNavigate()
 
     return (
         <Layout>
             <Top>
                 <div className="headerScreen">
-                    <span className="login">로그인/회원가입</span>
+                    <span className="login" onClick={()=>navigate("/login")}>로그인/회원가입</span>
                     <span className="findMember">회원정보찾기</span>
                 </div>
             </Top>
             <div className="Screen">
                 <div>
-                    <MainLogo alt="MainLogo" src={mainlogo} onClick={() => goHome()} />
+                    <MainLogo alt="MainLogo" src={mainlogo} onClick={() => navigate("/")} />
                     <ul>
                         <li>한국외식산업연구원</li>
                         <li>외식정보</li>
