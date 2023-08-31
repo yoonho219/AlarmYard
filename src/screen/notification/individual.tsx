@@ -5,49 +5,60 @@ import flielogo from "../../assets/images/filelogo.svg";
 import download from "../../assets/images/downloadlogo.svg";
 import { onlikelogo, offlikelogo, sharelogo, scraplogo } from "../../assets/images/logos/functions";
 import WriteComment from "../../components/write-comment";
-import prevbutton from "../../assets/images/prevpostbutton.svg";
-import nextbutton from "../../assets/images/nextpostbutton.svg";
-import listbutton from "../../assets/images/list-checkbox.svg";
 import Title from "../../components/title";
-import { useGetNotice } from "../../api";
+import PostButton from "../../components/post-button";
+import { gql, useQuery } from "@apollo/client";
+import { useParams } from "react-router-dom";
 
-interface Notice {
-    id: string;
-    title: string;
-    content: string;
-    category: string;
-    writer: {
-        id: string;
-        name: string;
-    };
-    createdAt: number;
-    viewCnt: number;
-    likeCnt: number;
-    commentCnt: number;
-    file: [string] | null;
-    isLike: boolean;
-    isScrap: boolean;
-}
-
-interface IUseNotice {
-    loading: boolean;
-    data: Notice | null;
-    error: null;
-}
+const GET_NOTICE_DATA = gql`
+    query NoticePost($noticePostId: ID!) {
+        noticePost(id: $noticePostId) {
+            id
+            category {
+                name
+            }
+            title
+            author {
+                name
+            }
+            createdAt
+            viewCnt
+            likeCnt
+            content
+            files {
+                filename
+            }
+            isLike
+            isPinned
+            replyCount
+        }
+    }
+`;
 
 export default function Individual() {
-    const { loading, data, error } = useGetNotice() as unknown as IUseNotice;
-    const [likes, setLikes] = useState<Boolean>(false);
-    const [scraps, setScraps] = useState<Boolean>(false);
+    let { id } = useParams();
+    const { loading, data } = useQuery(GET_NOTICE_DATA, {
+        variables: {
+            noticePostId: `${id}`,
+        }
+    })
+
+    const [likes, setLikes] = useState<Boolean>(data?.noticePost.isLike);
+    const [scraps, setScraps] = useState<Boolean>(data?.noticePost.isPinned);
 
     const likeStateChange = () => {
-        setLikes(!likes);
-        data && (data.isLike = !data.isLike);
-        data && (data.isLike ? data.likeCnt += 1 : data.likeCnt -= 1)
-    };  //ASK
+        if (!data) {
+            alert("error!")
+            return;
+        }
+        else setLikes(!likes);
+    };
     const scrapStateChange = () => {
-        setScraps(!scraps);
-        data && (data.isScrap = !data.isScrap);
+        if (!data) {
+            alert("error!")
+            return;
+        }
+        else setScraps(!scraps);
     };
 
     const setNumber = (cnt: number) => {
@@ -59,6 +70,24 @@ export default function Individual() {
         )
     }
 
+    const filedown = () => {
+        alert(`${data.noticePost.file}` + " 파일이 다운로드 되었습니다.");
+    }
+
+    const sharePage = () => {
+        if (navigator.share) {
+            navigator.share({
+                title: 'localhost',
+                url: `${window.location.href}`
+            }).then(() => {
+                console.log("현재 페이지가 공유되었습니다.")
+            }).catch(console.error)
+        }
+        else {
+            alert('현재 브라우저에서 지원하지 않는 기능입니다!')
+        }//TODO
+    };
+
     return (
         <>
             <Title state={false} />
@@ -68,41 +97,29 @@ export default function Individual() {
                         <PostTitle>
                             <div className="postTitleForm">
                                 <h5>공지사항</h5>
-                                <h3>{data.title}</h3>
+                                <h3>{[data.noticePost.category]} {data.noticePost.title}</h3>
                                 <PostDetail
-                                    writer={data.writer.name}
-                                    createdAt={data.createdAt}
-                                    viewCnt={data.viewCnt}
-                                    likeCnt={data.likeCnt}
+                                    writer={data.noticePost.author.name}
+                                    createdAt={data.noticePost.createdAt}
+                                    viewCnt={data.noticePost.viewCnt}
+                                    likeCnt={data.noticePost.likeCnt}
                                 />
                             </div>
                         </PostTitle>
                         <PostBody>
                             <div
-                                dangerouslySetInnerHTML={{ __html: `${data?.content}` }}
+                                dangerouslySetInnerHTML={{ __html: `${data.noticePost.content}` }}
                             ></div>
                             <FlieBoxForm>
-                                {data.file ?
+                                {data.noticePost.file ?
                                     <FileBoxLayout>
                                         <span>첨부파일</span>
                                         <div>
                                             <img className="filelogo" alt="filelogo" src={flielogo} />
-                                            <span className="filename">
-                                                2022_외식경영스타_아이디어_공모전_참가신청서_2022외식경영스타_팀명_주제명.PDF
+                                            <span onClick={filedown} className="filename">
+                                                {data.noticePost.file}
                                             </span>
-                                            <div className="downloadform">
-                                                다운로드
-                                                <img
-                                                    className="downloadlogo"
-                                                    alt="downloadlogo"
-                                                    src={download}
-                                                />
-                                            </div>
-                                        </div>
-                                        <div>
-                                            <img className="filelogo" alt="filelogo" src={flielogo} />
-                                            'files'
-                                            <div className="downloadform">
+                                            <div onClick={filedown} className="downloadform">
                                                 다운로드
                                                 <img
                                                     className="downloadlogo"
@@ -115,97 +132,44 @@ export default function Individual() {
                                     : <div className="fileless">첨부된 파일이 없습니다.</div>}
                             </FlieBoxForm>
                             <Functions>
-                                <div className="firstline">
-                                    {data.isLike ? (
+                                <div className="firstline" onClick={likeStateChange}>
+                                    {likes ? (
                                         <img
                                             className="a"
                                             alt="likelogo"
                                             src={onlikelogo}
-                                            onClick={likeStateChange}
                                         />
                                     ) : (
                                         <img
                                             alt="likelogo"
                                             src={offlikelogo}
-                                            onClick={likeStateChange}
                                         />
                                     )}
-                                    {setNumber(data.likeCnt)}
+                                    {setNumber(data.noticePost.likeCnt)}
                                 </div>
-                                <div>
+                                <div onClick={sharePage}>
                                     <img alt="sharelogo" src={sharelogo} /> 공유하기
                                 </div>
-                                <div className="secondline">
-                                    {data.isScrap ? (
+                                <div className="secondline" onClick={() => scrapStateChange()}>
+                                    {scraps ? (
                                         <img
                                             alt="scraplogo"
                                             src={onlikelogo}
-                                            onClick={scrapStateChange}
                                         />
                                     ) : (
                                         <img
                                             alt="scraplogo"
                                             src={scraplogo}
-                                            onClick={scrapStateChange}
                                         />
                                     )}
                                     스크랩
                                 </div>
                             </Functions>
                         </PostBody>
-                        <PostBottom>
-                            <PostCommentLayout>
-                                <PostCommentCount>
-                                    <span>댓글 <span style={{ color: "blue" }}>{data.commentCnt}</span></span>
-                                </PostCommentCount>
-                                {data.commentCnt === 0 ? (
-                                    <PostComment>등록된 댓글이 없습니다.</PostComment>
-                                ) : (
-                                    <PostCommentsForm>
-                                        <PostComments>
-                                            <div>
-                                                <div className="sort">
-                                                    <span className="writer">작성자</span>
-                                                    <span className="date">2023.01.01</span>
-                                                    <CommentButton>
-                                                        <div className="update">수정</div>
-                                                        <div>삭제</div>
-                                                    </CommentButton>
-                                                </div>
-                                                <p>도움이 되는 연구정보였습니다.감사합니다.</p>
-                                            </div>
-                                        </PostComments>
-                                        <PostComments>
-                                            <div>
-                                                <div className="sort">
-                                                    <span className="writer">작성자</span>
-                                                    <span className="date">2023.01.01</span>
-                                                    <CommentButton>
-                                                        <div>신고</div>
-                                                    </CommentButton>
-                                                </div>
-                                                <p>좋은 자료입니다.</p>
-                                            </div>
-                                        </PostComments>
-                                    </PostCommentsForm>
-                                )}
-                                <WriteComment />
-                            </PostCommentLayout>
-                        </PostBottom>
-                        <PostButtonForm>
-                            <button>
-                                <img alt="prevbutton" src={prevbutton} />
-                                이전글
-                            </button>
-                            <button className="nextbutton">
-                                다음글
-                                <img alt="nextbutton" src={nextbutton} />
-                            </button>
-                            <button className="listbutton">
-                                <img alt="listlogo" src={listbutton} />
-                                목록
-                            </button>
-                        </PostButtonForm>
+                        <WriteComment
+                            commentCnt={data.noticePost.replyCount}
+                        />
+                        <PostButton postId={id} />
                     </>
                 ) : (
                     <div>로딩중</div>
@@ -287,7 +251,7 @@ const FileBoxLayout = styled.div`
     }
     .filename {
       cursor: pointer;
-      width: 90%;
+      max-width: 90%;
       white-space: nowrap;
       overflow: hidden;
       text-overflow: ellipsis;
@@ -341,129 +305,5 @@ const Functions = styled.div`
   }
   .secondline {
     border-left: solid 1px #d8dde5;
-  }
-`;
-
-const PostBottom = styled.div`
-  border-top: solid 1px #dcdcdc;
-  border-bottom: solid 1px black;
-`;
-const PostCommentLayout = styled.div`
-  margin: 35px 30px;
-`;
-const PostCommentCount = styled.div`
-    font-size: 20px;
-    font-weight: 600;
-    line-height: 18px;
-`;
-const PostComment = styled.div`
-  margin: 80px 0;
-  display: flex;
-  justify-content: center;
-  color: #626873;
-  font-size: 16px;
-  font-weight: 400;
-  line-height: 28px;
-`;
-const PostCommentsForm = styled.div`
-  margin-top: 29px;
-  :last-child {
-    margin-bottom: 20px;
-  }
-`;
-const PostComments = styled.div`
-  height: 152px;
-  border-radius: 10px;
-  background: #f4f8ff;
-  margin-top: 10px;
-  > div {
-    padding: 34px;
-  }
-  div.sort {
-    height: 14px;
-    display: flex;
-    position: relative;
-  }
-  span:first-child {
-    height: 10px;
-    border-right: solid 1px #d8dde5;
-    margin-right: 12px;
-    padding-right: 12px;
-    font-weight: 500;
-  }
-  span {
-    font-family: Pretendard;
-    font-size: 14px;
-    font-style: normal;
-    font-weight: 400;
-    line-height: 14px;
-  }
-  .writer {
-    color: #333;
-  }
-  .date {
-    color: #6a768c;
-  }
-  p {
-    width: 100%;
-    height: 100%;
-    color: #626873;
-    margin-top: 15px;
-    font-family: Pretendard;
-    font-size: 16px;
-    font-weight: 400;
-    line-height: 28px;
-  }
-`;
-const CommentButton = styled.div`
-  cursor: pointer;
-  height: 14px;
-  position: absolute;
-  right: 0;
-  color: #666;
-  font-family: Pretendard;
-  font-size: 14px;
-  font-weight: 400;
-  line-height: 14px;
-  display: flex;
-  .update {
-    height: 10px;
-    margin-right: 12px;
-    padding-right: 12px;
-    border-right: solid 1px #d8dde5;
-  }
-`;
-
-const PostButtonForm = styled.div`
-  margin: 30px 0 100px;
-  display: flex;
-  position: relative;
-  button:not(:last-child) {
-    width: 107px;
-  }
-  button {
-    height: 46px;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    justify-content: space-evenly;
-    color: #666;
-    font-size: 16px;
-    font-weight: 500;
-    line-height: 18px;
-    border-radius: 4px;
-    border: solid 1px #dcdcdc;
-    background-color: white;
-  }
-  .nextbutton {
-    margin-left: 10px;
-  }
-  .listbutton {
-    width: 99px;
-    position: absolute;
-    right: 0;
-    img {
-      padding-right: 11px;
-    }
   }
 `;
