@@ -3,10 +3,9 @@ import React, { useState } from "react";
 
 interface ICommentProps {
     commentCnt: number;
-    refetch: () => void;
 }
 
-export default function Commenting({ commentCnt, refetch }: ICommentProps) {
+export default function Commenting({ commentCnt }: ICommentProps) {
     const [input, setInput] = useState<string>('');
 
     const commentInput = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
@@ -20,7 +19,6 @@ export default function Commenting({ commentCnt, refetch }: ICommentProps) {
         else {
             setInput('')
             alert("댓글이 등록되었습니다.")
-            refetch();
         }
     }
 
