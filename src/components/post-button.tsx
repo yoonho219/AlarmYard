@@ -1,9 +1,9 @@
-import React from "react";
+import React, { useEffect } from "react";
 import prevbutton from "../assets/images/prevpostbutton.svg"
 import nextbutton from "../assets/images/nextpostbutton.svg"
 import listbutton from "../assets/images/list-checkbox.svg"
 import { styled } from "styled-components";
-import { useNavigate } from "react-router-dom";
+import { useLocation, useNavigate, useSearchParams } from "react-router-dom";
 import { gql, useQuery } from "@apollo/client";
 
 const NAVIGATE_POST = gql`
@@ -24,39 +24,48 @@ interface IPost {
 }
 
 export default function PostButton(id: IPost) {
+    const navigate = useNavigate();
+
+    const [params, setParams] = useSearchParams();
+    const searched = params.get('search');
     const { data } = useQuery(NAVIGATE_POST, {
         variables: {
             noticePostNavigationId: `${id.postId}`,
-            params: {
-                search: "as",
-            }
+            // params: searched && {
+            //     search: `${searched}`,
+            // }
         }
     })
     const prePostId = data?.noticePostNavigation.prePostId;
     const nextPostId = data?.noticePostNavigation.nextPostId;
-    const param = data?.noticePostNavigation.params.search
     const prePostIsNone = prePostId === null;
     const nextPostIsNone = nextPostId === null;
 
-    const navigate = useNavigate();
+    const { pathname } = useLocation();
+    useEffect(() => {
+        window.scrollTo(0, 0);
+    }, [pathname])
 
     const navPrevPost = () => {
         if (prePostIsNone) {
             return;
         }
-        navigate(`/${prePostId}`)
+        if (searched !== "") {
+            navigate(`/${prePostId}?${params}`)
+        }
+        else navigate(`/${prePostId}`)
     }
     const navNextPost = () => {
         if (nextPostIsNone) {
             return;
         }
-        if (param !== "") {
-            navigate(`/${nextPostId}?${param}`)
+        if (searched !== "") {
+            navigate(`/${nextPostId}?${params}`)
         }
+        else navigate(`/${nextPostId}`)
     }
     const navList = () => {
-        //TODO : 목록버튼 클릭 시 공지 클릭한 페이지로 이동
-        navigate(`/`)
+        navigate(`/?${params}`)
     }
 
     return (
@@ -70,7 +79,7 @@ export default function PostButton(id: IPost) {
                     다음글
                     <img alt="nextbutton" src={nextbutton} />
                 </button>
-                <button className="listbutton" onClick={() => navList()}>
+                <button onClick={() => navList()} className="listbutton" >
                     <img alt="listlogo" src={listbutton} />
                     목록
                 </button>
