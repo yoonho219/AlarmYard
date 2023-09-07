@@ -6,6 +6,7 @@ import PageNumber from "../components/pagination";
 import openlogo from "../assets/images/openlogo.svg"
 import closelogo from "../assets/images/closelogo.svg"
 import writelogo from "../assets/images/writelogo.svg"
+import Title from "../components/title";
 
 interface InquireProps {
     number: number,
@@ -52,25 +53,20 @@ export default function Inquire() {
 
     return (
         <>
-            <TopLayout>
-                <h2 className="alarmyard">알림마당</h2>
-                <h3 className="inquiry">질문과 답변</h3>
-                <SearchBox>
-                    <Search placeholder="검색어를 입력해주세요." />
-                    <img alt="searchlogo" src={search} />
-                </SearchBox>
-            </TopLayout>
+            <Title
+                state={true}
+            />
             <InquiryForm>
                 {inquireInfo.map((e: InquireProps) => (
                     <>
                         <Inquirys>
                             <Number>{e.number}</Number>
                             <div className="inquiryTitle">
-                                <Title>
+                                <InquireTitle>
                                     <p>Q.</p>
                                     <h4>{e.title}</h4>
                                     <img alt="locklogo" src={lock} />
-                                </Title>
+                                </InquireTitle>
                                 <InquiryInfo>
                                     <span className="writer">{e.writer}</span>
                                     <span className="date">{e.date}</span>
@@ -82,16 +78,22 @@ export default function Inquire() {
                                 {state ? <img alt="openlogo" src={openlogo} onClick={() => inquireState()} />
                                     : <img alt="closelogo" src={closelogo} onClick={() => inquireState()} />}
                             </div>
-
                         </Inquirys>
-                        <div style={{ height: !state ? "100px" : "0px", transition: !state ? ".3s ease-out" : "none" }}>
+                        <div style={{ height: !state ? "100px" : "0px", transition: !state ? ".3s ease-out" : ".6s ease-out" }}>
                             {!state ? "adaaaa" : ""}
                         </div>
                     </>
 
                 ))}
             </InquiryForm >
-            <PageNumber />
+            {/*data? <PageNumber
+                limit={limit}        
+            page={page}
+            pageGroup={pageGroup}
+            setPageGroup={setPageGroup}
+            counts={data?.totalCnt}
+            movePage={movePage}
+            /> : ""*/}
             <WriteInquiry>
                 <img alt="writelogo" src={writelogo} />
                 작성하기
@@ -205,7 +207,7 @@ const Number = styled.div`
     line-height: 18px;
     position: absolute;
 `
-const Title = styled.div`
+const InquireTitle = styled.div`
     display: flex;
     gap: 5px;
     p{
