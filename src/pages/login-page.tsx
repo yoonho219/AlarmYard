@@ -105,7 +105,7 @@ const LoginBox = styled.div`
 const LoginForm = styled.div`
   width: 320px;
   height: 660px;
-  padding: 80px 140px;
+  margin: 80px 0 0 140px;
   h1 {
     text-align: center;
     font-size: 24px;
@@ -163,7 +163,7 @@ const LoginForm = styled.div`
 
 const InputForm = styled.form`
   input {
-    width: calc(320px - 36px);
+    width: 320px;
     height: 50px;
     font-size: 18px;
     padding: 0 18px;
