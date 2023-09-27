@@ -18,7 +18,6 @@ export default function Header() {
       setLogin(token);
     }
   }, []);
-  console.log(isLogged);
 
   const login = () => {
     navigate("/login");
@@ -36,7 +35,7 @@ export default function Header() {
                 </span>
               </li>
               <li>
-                <span onClick={() => logout()}>회원정보찾기</span>
+                <span>회원정보찾기</span>
               </li>
             </ul>
           ) : (
