@@ -25,7 +25,6 @@ export const AuthProvider = ({ children }: React.PropsWithChildren) => {
   }, [setIsLogged]);
 
   return (
-    //ASK : value를 배열 대신 객체로
     <LoginContext.Provider value={[isLogged, setLogin, logout]}>
       {children}
     </LoginContext.Provider>

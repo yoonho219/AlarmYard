@@ -2,7 +2,7 @@ import { useMutation } from "@apollo/client";
 import React, { useEffect } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { useIsLoginContext } from "./provider";
-import { GET_NAVER_SIGNUP_ACCESS_TOKEN } from "../../api/gql";
+import { GET_NAVER_SIGNUP_ACCESS_TOKEN } from "../../api/login";
 
 export default function NaverLogin() {
   const navigate = useNavigate();
@@ -27,7 +27,7 @@ export default function NaverLogin() {
       resolve(res);
       reject(alert("에러에러"));
     });
-      
+
     return new Promise((resolve, reject) => {
       fetch(
         `/oauth2.0/token?client_id=${naverClientKey}&client_secret=${naverSecretKey}&grant_type=authorization_code&state=${state}&code=${code}`

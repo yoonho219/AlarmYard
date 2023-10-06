@@ -34,7 +34,7 @@ export default function PostButton(id: IPost) {
             // params: searched && {
             //     search: `${searched}`,
             // }
-        }
+        },
     })
     const prePostId = data?.noticePostNavigation.prePostId;
     const nextPostId = data?.noticePostNavigation.nextPostId;

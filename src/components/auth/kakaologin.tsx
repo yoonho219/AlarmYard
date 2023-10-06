@@ -5,7 +5,7 @@ import { useIsLoginContext } from "./provider";
 import {
   GET_KAKAO_ACCESS_TOKEN,
   GET_KAKAO_SIGNUP_ACCESS_TOKEN,
-} from "../../api/gql";
+} from "../../api/login";
 
 export default function KakaoLogin() {
   const navigate = useNavigate();
