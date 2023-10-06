@@ -1,5 +1,14 @@
 import { gql } from "@apollo/client";
 
+// 중고거래
+export const GET_SIGNIN_ACCESS_TOKEN = gql`
+  mutation ($loginId: String!, $password: String!) {
+    signIn(loginId: $loginId, password: $password) {
+      accessToken
+    }
+  }
+`;
+
 //KAKAO
 export const GET_KAKAO_ACCESS_TOKEN = gql`
   mutation GetKakaoAccessToken($code: String!, $redirectUri: String!) {
@@ -22,7 +31,6 @@ export const GET_KAKAO_SIGNUP_ACCESS_TOKEN = gql`
     }
   }
 `;
-
 //GOOGLE
 export const GET_GOOGLE_SIGNUP_ACCESS_TOKEN = gql`
   mutation SignUpGoogle($accessToken: String!) {
@@ -36,7 +44,6 @@ export const GET_GOOGLE_SIGNUP_ACCESS_TOKEN = gql`
     }
   }
 `;
-
 //naver
 export const GET_NAVER_SIGNUP_ACCESS_TOKEN = gql`
   mutation SignUpNaver($accessToken: String!) {
