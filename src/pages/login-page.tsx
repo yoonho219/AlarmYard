@@ -1,26 +1,56 @@
-import React from "react";
+import React, { useState } from "react";
 import styled from "styled-components";
 import { kakao, naver, google, apple } from "../assets/images/logos/login";
 import { useGoogleLogin } from "@react-oauth/google";
-import { GET_GOOGLE_SIGNUP_ACCESS_TOKEN } from "../api/gql";
+import {
+  GET_GOOGLE_SIGNUP_ACCESS_TOKEN,
+  GET_SIGNIN_ACCESS_TOKEN,
+} from "../api/login";
 import { useMutation } from "@apollo/client";
 import { useIsLoginContext } from "../components/auth/provider";
 import { useNavigate } from "react-router-dom";
 
 export default function LoginPage() {
   const { Kakao } = window;
-
   const navigate = useNavigate();
-  const [, setLogin] = useIsLoginContext();
 
   const kakaoRedirectUri = process.env.REACT_APP_KAKAO_REDIRECT_URI;
   const naverClientKey = process.env.REACT_APP_NAVER_CLIENT_KEY;
 
   const naverUrl = `https://nid.naver.com/oauth2.0/authorize?response_type=code&client_id=${naverClientKey}&state=false&redirect_uri=http://localhost:3000/oauth/naver`;
 
+  const [, setLogin] = useIsLoginContext();
+  const [getLoginAccessToken] = useMutation(GET_SIGNIN_ACCESS_TOKEN);
   const [getGoogleSignUpAccessToken] = useMutation(
     GET_GOOGLE_SIGNUP_ACCESS_TOKEN
   );
+
+  const [loginState, setLoginState] = useState({
+    id: "",
+    password: "",
+  });
+
+  const { id, password } = loginState;
+
+  const changeLoginInput = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { value, name } = e.target;
+    setLoginState({
+      ...loginState,
+      [name]: value,
+    });
+  };
+
+  const normalLogin = async () => {
+    const normalAccessToken = await getLoginAccessToken({
+      variables: {
+        loginId: loginState.id,
+        password: loginState.password,
+      },
+    });
+    console.log(normalAccessToken.data.signIn.accessToken);
+    setLogin(normalAccessToken.data.signIn.accessToken);
+    navigate("/chatting");
+  };
 
   const kakaoLogin = () => {
     Kakao.Auth.authorize({
@@ -58,9 +88,25 @@ export default function LoginPage() {
             <b>K-FIRI 한국외식산업연구원</b>입니다.
           </h2>
           <InputForm>
-            <input placeholder="이메일 주소를 입력하세요." />
-            <input placeholder="비밀번호 주소를 입력하세요." />
-            <button type="button" className="loginButton">
+            <input
+              type="email"
+              name="id"
+              value={id}
+              onChange={(e) => changeLoginInput(e)}
+              placeholder="이메일 주소를 입력하세요."
+            />
+            <input
+              type="password"
+              name="password"
+              value={password}
+              onChange={(e) => changeLoginInput(e)}
+              placeholder="비밀번호 주소를 입력하세요."
+            />
+            <button
+              type="button"
+              className="loginButton"
+              onClick={() => normalLogin()}
+            >
               로그인
             </button>
           </InputForm>
@@ -163,7 +209,7 @@ const LoginForm = styled.div`
 
 const InputForm = styled.form`
   input {
-    width: 320px;
+    width: 284px;
     height: 50px;
     font-size: 18px;
     padding: 0 18px;
