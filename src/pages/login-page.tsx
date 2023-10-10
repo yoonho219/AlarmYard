@@ -47,7 +47,6 @@ export default function LoginPage() {
         password: loginState.password,
       },
     });
-    console.log(normalAccessToken.data.signIn.accessToken);
     setLogin(normalAccessToken.data.signIn.accessToken);
     navigate("/chatting");
   };
