@@ -1,4 +1,4 @@
-import React, { useMemo } from "react";
+import React, { useEffect, useMemo, useRef } from "react";
 import { styled } from "styled-components";
 import { useQuery } from "@apollo/client";
 import { CHECK_MESSAGE } from "../../api/data";
@@ -45,22 +45,28 @@ interface IMessage {
 export default function Message({ state }: IState) {
   const [searchParams] = useSearchParams();
   const id = searchParams.get("id")!;
-  const accessToken = sessionStorage.getItem("accessToken");
+
+  const scrollRef = useRef<null | HTMLDivElement>(null);
 
   const { data: checkMessage } = useQuery(CHECK_MESSAGE, {
     variables: {
       channelId: id,
-    },
-    context: {
-      headers: {
-        Authorization: `Bearer ${accessToken}`,
-      },
     },
   });
 
   const messageEdges = useMemo(() => {
     return checkMessage?.businessChatMessages.edges.slice().reverse();
   }, [checkMessage]);
+
+  const scrollToBottom = () => {
+    if (scrollRef.current) {
+      scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
+    }
+  };
+
+  useEffect(() => {
+    scrollToBottom();
+  }, [messageEdges]);
 
   const myText = (
     type: string,
@@ -220,7 +226,7 @@ export default function Message({ state }: IState) {
 
   return (
     <ChatForm state={state}>
-      <div className="chattingLayout">
+      <div className="chattingLayout" ref={scrollRef}>
         {messageEdges &&
           messageEdges.map((e: IMessage, i: number) => {
             const isLast = () => {
