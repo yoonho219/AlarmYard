@@ -1,9 +1,9 @@
-import React, { useMemo, useState } from "react";
+import React, { useMemo } from "react";
 import styled from "styled-components";
 import Title from "../../components/title";
 import DirectChat from "./direct-chat";
-import { useQuery } from "@apollo/client";
-import { GET_CHAT_DATA } from "../../api/data";
+import { useMutation, useQuery } from "@apollo/client";
+import { GET_CHAT_DATA, READ_MESSAGES } from "../../api/data";
 import { DateTime } from "luxon";
 import { useSearchParams } from "react-router-dom";
 
@@ -29,14 +29,8 @@ interface IChatListData {
 }
 
 export default function Chatting() {
-  const accessToken = sessionStorage.getItem("accessToken");
-  const { data } = useQuery(GET_CHAT_DATA, {
-    context: {
-      headers: {
-        Authorization: `Bearer ${accessToken}`,
-      },
-    },
-  });
+  const { data } = useQuery(GET_CHAT_DATA);
+  const [readMessage] = useMutation(READ_MESSAGES);
 
   const edges = useMemo(() => {
     return data?.myBusinessChatChannels?.edges;
@@ -45,7 +39,13 @@ export default function Chatting() {
   const [searchParams, setSearchParams] = useSearchParams();
   const roomIdx = searchParams.get("room");
 
-  const changeRoom = (num: number, id: string) => {
+  const changeRoom = (id: string, num: number) => {
+    readMessage({
+      variables: {
+        channelId: id,
+      },
+      refetchQueries: [GET_CHAT_DATA],
+    });
     searchParams.set("id", id);
     searchParams.set("room", (num + 1).toString());
     setSearchParams(searchParams);
@@ -67,7 +67,7 @@ export default function Chatting() {
               edges.map((e: IChatNode, i: number) => (
                 <ChatRoom
                   key={i}
-                  onClick={() => changeRoom(i, e?.node?.id)}
+                  onClick={() => changeRoom(e?.node?.id, i)}
                   $active={roomIdx === (i + 1).toString()}
                 >
                   <div>
