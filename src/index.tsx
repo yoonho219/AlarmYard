@@ -6,9 +6,14 @@ import { BrowserRouter } from "react-router-dom";
 import { ApolloClient, InMemoryCache, ApolloProvider } from "@apollo/client";
 import { GoogleOAuthProvider } from "@react-oauth/google";
 
+const accessToken = sessionStorage.getItem("accessToken");
+
 const client = new ApolloClient({
   uri: "http://211.110.139.183:5900/graphql",
   cache: new InMemoryCache(),
+  headers: {
+    Authorization: `Bearer ${accessToken}`,
+  },
 });
 
 const googleClient = process.env.REACT_APP_GOOGLE_CLIENT_KEY;
