@@ -1,45 +1,83 @@
-import React, { useMemo, useState } from "react";
+import React, { useMemo, useRef, useState } from "react";
 import { styled } from "styled-components";
-import { useQuery } from "@apollo/client";
+import { useMutation, useQuery } from "@apollo/client";
 import { useSearchParams } from "react-router-dom";
-import { CHECK_CHANNEL } from "../../api/data";
+import {
+  GET_CHAT_DATA,
+  CHECK_CHANNEL,
+  CHECK_MESSAGE,
+  SEND_MESSAGE,
+} from "../../api/data";
 import userIcon from "../../assets/images/user.svg";
 import sharing from "../../assets/images/sharing.svg";
+import closeBtn from "../../assets/images/closeButton.svg";
 import Message from "./message";
+import { upload } from "../../api/axios";
 
-export default function DirectChat() {
-  const [state, setState] = useState<boolean>(true);
+interface IDataProps {
+  cursor: string;
+}
+
+export default function DirectChat(cursor: IDataProps) {
+  const [state, setState] = useState<boolean>(true); //각 방마다 state를 개별로
+  // 모달창
   const [isOpen, setIsOpen] = useState<boolean>(false);
-  const [searchParams] = useSearchParams();
+  // 채팅 input
+  const [input, setInput] = useState<string>("");
+
+  const [searchParams, setSearchParams] = useSearchParams();
   const id = searchParams.get("id")!;
-  const accessToken = sessionStorage.getItem("accessToken");
 
   const { data } = useQuery(CHECK_CHANNEL, {
     variables: {
       businessChatChannelId: id,
-    },
-    context: {
-      headers: {
-        Authorization: `Bearer ${accessToken}`,
-      },
     },
   });
   const channelEdges = useMemo(() => {
     return data?.businessChatChannel.secondhand;
   }, [data]);
 
-  const changeState = () => {
-    //TODO: 방 나갈지 재확인 경고창
-    // setState(false);
+  const [sendMessages] = useMutation(SEND_MESSAGE);
+
+  const changeChatInput = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    setInput(e.target.value);
   };
 
-  const clickSentBtn = () => {
-    //TODO: 전송 버튼 클릭 시 기능
-    alert("전송되었습니다.");
+  const fileInput = useRef<HTMLInputElement>(null);
+
+  const clickShareFile = () => {
+    fileInput.current?.click();
+  };
+
+  const clickSentBtn = (input: string) => {
+    //FIX: useCallBack으로
+    if (input === "" || id === "") return;
+    sendMessages({
+      variables: {
+        data: {
+          message: input,
+          channelId: id,
+          type: "TEXT",
+        },
+      },
+      refetchQueries: [GET_CHAT_DATA, CHECK_MESSAGE],
+    });
+    setInput("");
+    searchParams.set("room", "1");
+    setSearchParams(searchParams);
+  };
+
+  const openModal = () => {
+    setIsOpen(true);
+  };
+
+  const goOutChat = () => {
+    setState(false);
+    setIsOpen(false);
   };
 
   return (
-    //첫 렌더링 때 채팅방 리스트의 첫 번재 채팅방 불러오기
+    //TODO: 첫 렌더링 때 채팅방 리스트의 첫 번째 채팅방 불러오기
     <ChatLayout>
       <ChattingTitle>
         <img src={userIcon} alt="useIcon" className="profile" />
@@ -51,7 +89,7 @@ export default function DirectChat() {
           <div className="line" />
           <div className="function">차단하기</div>
           <div className="line" />
-          <div className="function" onClick={() => changeState()}>
+          <div className="function" onClick={() => openModal()}>
             나가기
           </div>
         </div>
@@ -74,29 +112,96 @@ export default function DirectChat() {
           </>
         )}
       </SellProduct>
-      <Message state={state} />
+      <Message state={state} cursor={cursor} />
       {state && (
         <OpponentIn>
           <div className="inputForm">
             <div className="inputBox">
-              <button type="button">
-                <img
-                  alt="share"
-                  src={sharing}
-                  onClick={() => alert("무엇을 공유하시겠습니까?")}
+              <button type="button" onClick={() => clickShareFile()}>
+                <img alt="share" src={sharing} />
+                <input
+                  type="file"
+                  ref={fileInput}
+                  onChange={async (e) => {
+                    const list: File[] = [];
+                    const files = e.target.files;
+                    if (files === null) return;
+
+                    for (const file of files) {
+                      list.push(file);
+                    }
+                    const res = await upload(list);
+                    if (res === undefined) return;
+                    const fileData = await JSON.stringify(res[0]);
+                    if (fileData !== undefined) {
+                      await sendMessages({
+                        variables: {
+                          data: {
+                            channelId: id,
+                            type: "FILE",
+                            payload: fileData,
+                          },
+                        },
+                        refetchQueries: [GET_CHAT_DATA, CHECK_MESSAGE],
+                      });
+                    }
+                  }}
                 />
               </button>
-              <textarea placeholder="메세지를 입력해주세요." />
+              <textarea
+                placeholder="메세지를 입력해주세요."
+                value={input}
+                onChange={(e) => changeChatInput(e)}
+              />
             </div>
             <button
               type="button"
               className="sendBtn"
-              onClick={() => clickSentBtn()}
+              onClick={() => clickSentBtn(input)}
             >
               전송
             </button>
           </div>
         </OpponentIn>
+      )}
+      {isOpen && (
+        //FIX: 방을 나갔을 때 어떻게 할지(ex:채팅 부분에 채팅방을 골라달라고 글을 띄운다.
+        <Modal>
+          <div className="header">
+            <h5 onClick={() => setState(false)}>나가기</h5>
+            <button type="button" className="closeBtn">
+              <img
+                alt="close"
+                src={closeBtn}
+                className="closeImage"
+                onClick={() => setIsOpen(false)}
+              />
+            </button>
+          </div>
+          <p>
+            채팅방을 나가면 채팅 목록 및 대화내용이
+            <br />
+            삭제되며 복구하실 수 없습니다.
+            <br />
+            채팅방에서 나가시겠습니까?
+          </p>
+          <div className="btnForm">
+            <button
+              type="button"
+              className="noBtn"
+              onClick={() => setIsOpen(false)}
+            >
+              아니오
+            </button>
+            <button
+              type="button"
+              className="yesBtn"
+              onClick={() => goOutChat()}
+            >
+              예
+            </button>
+          </div>
+        </Modal>
       )}
     </ChatLayout>
   );
@@ -229,14 +334,22 @@ const OpponentIn = styled.div`
     background: #f2f2f2;
   }
 
+  input {
+    display: none;
+  }
   img {
     width: 26px;
     height: 26px;
-    margin: auto 20px;
+  }
+  button {
+    cursor: pointer;
+    border: none;
+    background: none;
+    margin: 0 20px;
   }
   textarea {
     width: 550px;
-    height: 22.5px;
+    height: 17px;
     color: #767676;
     background: #f2f2f2;
     font-size: 17px;
@@ -246,15 +359,11 @@ const OpponentIn = styled.div`
     resize: none;
     outline: none;
   }
-  button {
-    cursor: pointer;
-    border: none;
-    background: none;
-  }
 
   .sendBtn {
     width: 90px;
     height: 60px;
+    margin: 0;
     display: flex;
     justify-content: center;
     align-items: center;
@@ -264,5 +373,78 @@ const OpponentIn = styled.div`
     font-size: 18px;
     font-weight: 500;
     line-height: 17px;
+  }
+`;
+
+const Modal = styled.div`
+  display: none;
+  width: 420px;
+  height: 264px;
+  padding: 36px 40px;
+  border-radius: 15px;
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  display: flex;
+  flex-direction: column;
+  background-color: white;
+
+  border: solid 0.5px black;
+
+  .header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  h5 {
+    font-size: 24px;
+    font-weight: 700;
+    line-height: 24px;
+    margin: 0;
+  }
+  .closeBtn {
+    width: 40px;
+    height: 40px;
+    background-color: white;
+    border: none;
+  }
+
+  p {
+    color: #555;
+    font-size: 20px;
+    font-weight: 400;
+    line-height: 28px;
+    margin: 40px 0;
+  }
+
+  button {
+    cursor: pointer;
+    width: 200px;
+    height: 60px;
+    padding: 0;
+    margin: 0;
+    border: solid 1px #d8dde5;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    color: #555;
+    font-size: 20px;
+    font-weight: 500;
+    line-height: 20px;
+  }
+
+  .btnForm {
+    display: flex;
+    gap: 20px;
+  }
+  .noBtn {
+    background-color: white;
+  }
+  .yesBtn {
+    color: white;
+    background-color: #5a33be;
   }
 `;
