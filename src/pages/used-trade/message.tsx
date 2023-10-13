@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useRef } from "react";
+import React, { useCallback, useEffect, useMemo, useRef } from "react";
 import { styled } from "styled-components";
 import { useQuery } from "@apollo/client";
 import { CHECK_MESSAGE } from "../../api/data";
@@ -47,15 +47,18 @@ export default function Message({ state }: IState) {
   const id = searchParams.get("id")!;
 
   const scrollRef = useRef<null | HTMLDivElement>(null);
+  const targetRef = useRef<HTMLDivElement | null>(null);
 
-  const { data: checkMessage } = useQuery(CHECK_MESSAGE, {
+  const { data: checkMessage, fetchMore } = useQuery(CHECK_MESSAGE, {
     variables: {
       channelId: id,
+      first: 10,
     },
   });
+  const last = checkMessage?.businessChatMessages.pageInfo.endCursor;
 
   const messageEdges = useMemo(() => {
-    return checkMessage?.businessChatMessages.edges.slice().reverse();
+    return checkMessage?.businessChatMessages.edges;
   }, [checkMessage]);
 
   const scrollToBottom = () => {
@@ -63,11 +66,28 @@ export default function Message({ state }: IState) {
       scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
     }
   };
-
   useEffect(() => {
     scrollToBottom();
   }, [messageEdges]);
 
+  //TODO: 시간 되면 마무리 하기
+  const payloadData = () => {
+    if (
+      (messageEdges && messageEdges?.node.type === "FILE") ||
+      "IMAGE" ||
+      "VIDEO" ||
+      "CARD"
+    ) {
+      const filePayload = messageEdges?.node.payload;
+      return {
+        fileUrl: filePayload.url,
+        fileName: filePayload.name,
+        fileSize: filePayload.size,
+      };
+    }
+  };
+
+  //FIX: 나와 상대 텍스트가 비슷하니까 하나로 묶기(&다듬기)
   const myText = (
     type: string,
     text: string,
@@ -80,7 +100,7 @@ export default function Message({ state }: IState) {
     const created = DateTime.fromISO(createdAt).toFormat("t");
     if (type === "TEXT") {
       return (
-        <MyChatBoxForm active={nextMessage}>
+        <MyChatBoxForm isNextMessage={nextMessage}>
           <div className="myLastText">
             <div>
               {isLast &&
@@ -95,7 +115,7 @@ export default function Message({ state }: IState) {
       );
     } else if (type === "LINK") {
       return (
-        <MyChatBoxForm active={nextMessage}>
+        <MyChatBoxForm isNextMessage={nextMessage}>
           <div className="myLastText">
             <div>
               {isLast &&
@@ -118,7 +138,7 @@ export default function Message({ state }: IState) {
       );
     } else if (type === "FILE" || "IMAGE" || "VIDEO" || "CARD") {
       return (
-        <MySharedForm active={nextMessage}>
+        <MySharedForm isNextMessage={nextMessage}>
           <div className="lastText">
             {isLast && (unread === 0 ? <span>읽음</span> : <span>안읽음</span>)}
             {!nextMessage && <div className="time">{created}</div>}
@@ -145,7 +165,6 @@ export default function Message({ state }: IState) {
       );
     }
   };
-
   const opponentText = (
     type: string,
     name: string,
@@ -156,10 +175,9 @@ export default function Message({ state }: IState) {
     isMe: boolean
   ) => {
     const created = DateTime.fromISO(createdAt).toFormat("t");
-
     if (type === "TEXT") {
       return (
-        <OpponentChatBoxForm active={nextMessage}>
+        <OpponentChatBoxForm isNextMessage={nextMessage}>
           {writer && <span>{name}</span>}
           <div className="opponentLastText">
             <OpponentChatBox>
@@ -171,7 +189,7 @@ export default function Message({ state }: IState) {
       );
     } else if (type === "LINK") {
       return (
-        <OpponentChatBoxForm active={nextMessage}>
+        <OpponentChatBoxForm isNextMessage={nextMessage}>
           {writer && <span>{name}</span>}
           <div className="opponentLastText">
             <OpponentChatBox>
@@ -190,6 +208,12 @@ export default function Message({ state }: IState) {
         </OpponentChatBoxForm>
       );
     } else if (type === "FILE" || "IMAGE" || "VIDEO" || "CARD") {
+      //   const filePayload = messageEdges?.node.payload;
+      //   const fileUrl = filePayload.url;
+      //   const fileName = filePayload.name;
+      //   const fileSize = filePayload.size;
+      //   const { fileUrl, fileName, fileSize } = payloadData();
+
       return (
         <OpponentSharedForm active={nextMessage}>
           <OpponentShared>
@@ -202,8 +226,11 @@ export default function Message({ state }: IState) {
                 <img alt="shared" src={shared} />
               </button>
               <div className="sharedText">
-                <span className="fileName">{type}</span>
-                <span className="fileSize">파일 크기</span>
+                <span className="fileName">파일이름</span>
+                <span className="fileSize">
+                  파일 크기
+                  {/* {fileSize ? (fileSize / 1024).toFixed(1) : 0}KB; */}
+                </span>
               </div>
               <button type="button" onClick={() => alert("다운되었습니다.")}>
                 <img alt="download" src={download} />
@@ -224,13 +251,75 @@ export default function Message({ state }: IState) {
     }
   };
 
+  const observerProp = useCallback(
+    (entries: IntersectionObserverEntry[]) => {
+      const total = checkMessage?.businessChatMessages.totalCount;
+      if (messageEdges === undefined) return;
+      if (total > 10) {
+        if (entries[0].isIntersecting) {
+          fetchMore({
+            variables: {
+              after: last,
+            },
+            updateQuery: (prevData, { fetchMoreResult }) => {
+              if (!fetchMoreResult) return prevData;
+              const existingIds = new Set(
+                prevData.businessChatMessages.edges.map(
+                  (edge: any) => edge?.node.id
+                )
+              );
+              const updateEdges =
+                fetchMoreResult.businessChatMessages.edges.filter(
+                  (edge: any) => {
+                    return !existingIds.has(edge?.node.id);
+                  }
+                );
+              return {
+                ...prevData,
+                businessChatMessages: {
+                  ...prevData.businessChatMessages,
+                  edges: [
+                    ...prevData.businessChatMessages.edges,
+                    ...updateEdges,
+                  ],
+                },
+              };
+            },
+          });
+        }
+      }
+    },
+    [
+      messageEdges,
+      last,
+      checkMessage?.businessChatMessages.totalCount,
+      fetchMore,
+    ]
+  );
+  useEffect(() => {
+    const observer = new IntersectionObserver(observerProp);
+    if (targetRef.current) {
+      observer.observe(targetRef.current);
+    }
+    return () => {
+      observer.disconnect();
+    };
+  }, [observerProp]);
+
   return (
     <ChatForm state={state}>
       <div className="chattingLayout" ref={scrollRef}>
+        {!state && (
+          <OpponentOut>
+            <div />
+            <span>상대방이 대화를 종료하였습니다.</span>
+            <div />
+          </OpponentOut>
+        )}
         {messageEdges &&
           messageEdges.map((e: IMessage, i: number) => {
             const isLast = () => {
-              if (messageEdges.length - 1 === i) {
+              if (i === 0) {
                 return true;
               } else {
                 return false;
@@ -238,10 +327,10 @@ export default function Message({ state }: IState) {
             };
 
             const nextMessage = () => {
-              if (messageEdges[i + 1]?.node.author.id === e.node.author.id) {
+              if (messageEdges[i - 1]?.node.author.id === e.node.author.id) {
                 if (
-                  messageEdges[i + 1]?.node.createdAt &&
-                  DateTime.fromISO(messageEdges[i + 1]?.node.createdAt)
+                  messageEdges[i - 1]?.node.createdAt &&
+                  DateTime.fromISO(messageEdges[i - 1]?.node.createdAt)
                     .minute === DateTime.fromISO(e.node.createdAt).minute
                 ) {
                   return true;
@@ -297,16 +386,7 @@ export default function Message({ state }: IState) {
               );
             }
           })}
-        {/* TODO
-          - 새로운 문자 생겼을 시 스크롤 아래로
-          */}
-        {!state && (
-          <OpponentOut>
-            <div />
-            <span>상대방이 대화를 종료하였습니다.</span>
-            <div />
-          </OpponentOut>
-        )}
+        <div ref={targetRef} />
       </div>
     </ChatForm>
   );
@@ -318,6 +398,8 @@ const ChatForm = styled.div<{ state: boolean }>`
 
   .chattingLayout {
     height: ${(props) => (props.state ? "525px" : "625px")};
+    display: flex;
+    flex-direction: column-reverse;
     overflow-y: scroll;
     overflow-x: hidden;
     &::-webkit-scrollbar {
@@ -329,11 +411,19 @@ const ChatForm = styled.div<{ state: boolean }>`
       height: 5px;
     }
   }
+
+  .observer {
+    height: 0;
+  }
 `;
 
-const OpponentChatBoxForm = styled.div<{ active: boolean }>`
+const OpponentChatBoxForm = styled.div<{ isNextMessage: boolean }>`
+  @media (max-width: 600px) {
+    margin: ${(props) =>
+      props.isNextMessage ? "10px 10px 10px 0" : "10px 10px 25px 0"};
+  }
   margin: ${(props) =>
-    props.active ? "10px 20px 10px 30px;" : "10px 20px 25px 30px;"};
+    props.isNextMessage ? "10px 20px 10px 30px;" : "10px 20px 25px 30px;"};
   display: flex;
   flex-direction: column;
   align-items: flex-start;
@@ -354,6 +444,9 @@ const OpponentChatBoxForm = styled.div<{ active: boolean }>`
   }
 `;
 const OpponentChatBox = styled.div`
+  @media (max-width: 600px) {
+    max-width: 180px;
+  }
   max-width: 400px;
   display: flex;
   align-items: center;
@@ -385,10 +478,13 @@ const OpponentSharedForm = styled.div<{ active: boolean }>`
   .time {
     color: #898989;
     font-size: 14px;
-    line-height: 100%;
+    line-height: 14px;
   }
 `;
 const OpponentShared = styled.div`
+  @media (max-width: 600px) {
+    padding: 15px;
+  }
   width: 203px;
   height: 45px;
   display: flex;
@@ -448,9 +544,13 @@ const OpponentShared = styled.div`
   }
 `;
 
-const MyChatBoxForm = styled.div<{ active: boolean }>`
+const MyChatBoxForm = styled.div<{ isNextMessage: boolean }>`
+  @media (max-width: 600px) {
+    margin: ${(props) =>
+      props.isNextMessage ? "10px 10px 10px 0" : "10px 10px 25px 0"};
+  }
   margin: ${(props) =>
-    props.active ? "10px 20px 10px 0" : "10px 20px 25px 0"};
+    props.isNextMessage ? "5px 20px 10px 0" : "5px 20px 20px 0"};
   display: flex;
   justify-content: flex-end;
 
@@ -474,6 +574,9 @@ const MyChatBoxForm = styled.div<{ active: boolean }>`
       display: flex;
       flex-direction: column;
       span {
+        @media (max-width: 600px) {
+          font-size: 12px;
+        }
         color: #193dd0;
         font-size: 15px;
         font-weight: 500;
@@ -483,6 +586,9 @@ const MyChatBoxForm = styled.div<{ active: boolean }>`
   }
 `;
 const MyChatBox = styled.div`
+  @media (max-width: 600px) {
+    max-width: 180px;
+  }
   max-width: 400px;
   display: flex;
   align-items: center;
@@ -501,8 +607,8 @@ const MyChatBox = styled.div`
     word-break: break-all;
   }
 `;
-const MySharedForm = styled.div<{ active: boolean }>`
-  margin: ${(props) => (props.active ? "8px 20px 8px 0" : "8px 20px 25px 0")};
+const MySharedForm = styled.div<{ isNextMessage: boolean }>`
+  margin: ${(props) => (props.isNextMessage ? "8px 20px 8px 0" : "8px 20px 25px 0")};
   display: flex;
   justify-content: flex-end;
   align-items: end;
@@ -515,6 +621,9 @@ const MySharedForm = styled.div<{ active: boolean }>`
     text-align: end;
     margin-right: 8px;
     span {
+      @media (max-width: 600px) {
+        font-size: 12px;
+      }
       color: #193dd0;
       font-size: 15px;
       font-weight: 500;
@@ -528,6 +637,9 @@ const MySharedForm = styled.div<{ active: boolean }>`
   }
 `;
 const MyShared = styled.div`
+  @media (max-width: 600px) {
+    padding: 15px;
+  }
   width: 203px;
   height: 45px;
   display: flex;
@@ -591,19 +703,27 @@ const MyShared = styled.div`
 `;
 
 const OpponentOut = styled.div`
+  @media (max-width: 600px) {
+    margin: 50px 0 69px;
+  }
   padding-left: 20px;
-  margin-top: 66px;
-  margin-bottom: 41px;
+  margin: 66px 0 41px;
   display: flex;
   align-items: center;
   background-color: #fff;
 
   div {
+    @media (max-width: 600px) {
+      width: 60px;
+    }
     width: 260px;
     height: 1px;
     background: #d8dde5;
   }
   span {
+    @media (max-width: 600px) {
+      margin: 0 10px;
+    }
     color: #666;
     text-align: center;
     font-size: 14px;
