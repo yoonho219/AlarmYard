@@ -5,6 +5,9 @@ export const GET_CHAT_DATA = gql`
   query {
     myBusinessChatChannels {
       totalCount
+      pageInfo {
+        endCursor
+      }
       edges {
         node {
           id
@@ -51,8 +54,13 @@ export const CHECK_CHANNEL = gql`
 
 //메세지 목록 조회
 export const CHECK_MESSAGE = gql`
-  query ($channelId: ID!) {
-    businessChatMessages(channelId: $channelId) {
+  query ($channelId: ID!, $after: String, $first: Int) {
+    businessChatMessages(channelId: $channelId, after: $after, first: $first) {
+      totalCount
+      pageInfo {
+        endCursor
+        hasNextPage
+      }
       edges {
         node {
           message
@@ -77,6 +85,13 @@ export const CHECK_MESSAGE = gql`
           }
           author {
             id
+          }
+          payload {
+            ... on ChatMessageFileTypePayload {
+              url
+              size
+              filename
+            }
           }
         }
       }
