@@ -11,15 +11,13 @@ import {
 import userIcon from "../../assets/images/user.svg";
 import sharing from "../../assets/images/sharing.svg";
 import closeBtn from "../../assets/images/closeButton.svg";
+import goOutBtn from "../../assets/images/go-out-chat.svg";
 import Message from "./message";
 import { upload } from "../../api/axios";
 
-interface IDataProps {
-  cursor: string;
-}
-
-export default function DirectChat(cursor: IDataProps) {
-  const [state, setState] = useState<boolean>(true); //각 방마다 state를 개별로
+export default function DirectChat() {
+  //TODO: graphql로 변경(나간 방 구분)
+  const [state, setState] = useState<boolean>(true);
   // 모달창
   const [isOpen, setIsOpen] = useState<boolean>(false);
   // 채팅 input
@@ -80,6 +78,7 @@ export default function DirectChat(cursor: IDataProps) {
     //TODO: 첫 렌더링 때 채팅방 리스트의 첫 번째 채팅방 불러오기
     <ChatLayout>
       <ChattingTitle>
+        <img alt="outButton" src={goOutBtn} className="goOutBtn" />
         <img src={userIcon} alt="useIcon" className="profile" />
         <div className="name">{channelEdges?.author?.name}</div>
         <div className="functions">
@@ -97,7 +96,11 @@ export default function DirectChat(cursor: IDataProps) {
       <SellProduct>
         {channelEdges && (
           <>
-            <img alt="chatimage" src={channelEdges?.images?.url} />
+            <img
+              alt="chatimage"
+              src={channelEdges?.images?.url}
+              className="userProfile"
+            />
             <div className="sellProductTitle">
               <div className="explanation">
                 <span className="selling">{channelEdges?.state}</span>
@@ -112,7 +115,7 @@ export default function DirectChat(cursor: IDataProps) {
           </>
         )}
       </SellProduct>
-      <Message state={state} cursor={cursor} />
+      <Message state={state} />
       {state && (
         <OpponentIn>
           <div className="inputForm">
@@ -208,12 +211,22 @@ export default function DirectChat(cursor: IDataProps) {
 }
 
 const ChatLayout = styled.div`
+  @media (max-width: 600px) {
+    /* display: none; */
+    width: 100vw;
+    height: 100vh;
+    border: none;
+  }
   width: 800px;
   height: 800px;
   border-radius: 10px;
   border: solid 1px #d8dde5;
 `;
 const ChattingTitle = styled.div`
+  @media (max-width: 600px) {
+    width: 100%;
+    height: 50px;
+  }
   width: 800px;
   height: 60px;
   display: flex;
@@ -225,7 +238,17 @@ const ChattingTitle = styled.div`
   font-weight: 400;
   line-height: 14px;
 
+  .goOutBtn {
+    @media (max-width: 600px) {
+      margin: 0 20px;
+    }
+    width: 8px;
+    height: 14px;
+  }
   .profile {
+    @media (max-width: 600px) {
+      margin: 0;
+    }
     width: 12px;
     height: 12px;
     margin-left: 24px;
@@ -233,15 +256,21 @@ const ChattingTitle = styled.div`
   .name {
     color: #555;
     max-width: 100px;
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
     font-weight: 600;
     margin-left: 8px;
   }
 
   .functions {
+    @media (max-width: 600px) {
+      right: 20px;
+    }
     color: #666;
     display: flex;
     position: absolute;
-    left: 590px;
+    right: 25px;
   }
   .function {
     cursor: pointer;
@@ -254,7 +283,11 @@ const ChattingTitle = styled.div`
 `;
 
 const SellProduct = styled.div`
-  width: calc(100%-50px);
+  @media (max-width: 600px) {
+    width: calc(100% - 40px);
+    padding: 20px;
+  }
+  width: calc(100% - 50px);
   height: 60px;
   padding: 25px;
   display: flex;
@@ -279,6 +312,10 @@ const SellProduct = styled.div`
     line-height: 18px;
   }
   .line {
+    @media (max-width: 600px) {
+      margin-right: 4px;
+      font-weight: 400;
+    }
     margin: 0 5px;
     color: #666;
     font-size: 14px;
@@ -292,6 +329,9 @@ const SellProduct = styled.div`
     line-height: 18px;
   }
   .detail {
+    @media (max-width: 600px) {
+      width: 135px;
+    }
     width: 480px;
     display: inline-block;
     overflow: hidden;
@@ -305,6 +345,9 @@ const SellProduct = styled.div`
   }
 
   .price {
+    @media (max-width: 600px) {
+      font-size: 16px;
+    }
     color: #444;
     font-size: 20px;
     font-weight: 600;
@@ -314,6 +357,10 @@ const SellProduct = styled.div`
 `;
 
 const OpponentIn = styled.div`
+  @media (max-width: 600px) {
+    width: 100%;
+    align-items: baseline;
+  }
   width: 800px;
   height: 105px;
   display: flex;
@@ -321,11 +368,19 @@ const OpponentIn = styled.div`
   border-top: solid 1px #d8dde5;
 
   .inputForm {
+    @media (max-width: 600px) {
+      padding: 0 15px;
+      gap: 7px;
+      margin-top: 15px;
+    }
     display: flex;
     padding: 0 25px;
     gap: 18px;
   }
   .inputBox {
+    @media (max-width: 600px) {
+      width: 270px;
+    }
     width: 640px;
     height: 60px;
     display: flex;
@@ -338,16 +393,23 @@ const OpponentIn = styled.div`
     display: none;
   }
   img {
-    width: 26px;
-    height: 26px;
+    width: 29px;
+    height: 29px;
   }
   button {
+    @media (max-width: 600px) {
+      margin: 0 8px 0 15px;
+    }
     cursor: pointer;
     border: none;
     background: none;
     margin: 0 20px;
+    padding: 0;
   }
   textarea {
+    @media (max-width: 600px) {
+      width: 200px;
+    }
     width: 550px;
     height: 17px;
     color: #767676;
@@ -361,6 +423,10 @@ const OpponentIn = styled.div`
   }
 
   .sendBtn {
+    @media (max-width: 600px) {
+      width: 70px;
+      height: 60px;
+    }
     width: 90px;
     height: 60px;
     margin: 0;
@@ -377,6 +443,11 @@ const OpponentIn = styled.div`
 `;
 
 const Modal = styled.div`
+  @media (max-width: 600px) {
+    width: 277px;
+    height: 224px;
+    padding: 24px;
+  }
   display: none;
   width: 420px;
   height: 264px;
@@ -398,12 +469,19 @@ const Modal = styled.div`
     justify-content: space-between;
   }
   h5 {
+    @media (max-width: 600px) {
+      font-size: 18px;
+    }
     font-size: 24px;
     font-weight: 700;
     line-height: 24px;
     margin: 0;
   }
   .closeBtn {
+    @media (max-width: 600px) {
+      width: 24px;
+      height: 24px;
+    }
     width: 40px;
     height: 40px;
     background-color: white;
@@ -411,6 +489,10 @@ const Modal = styled.div`
   }
 
   p {
+    @media (max-width: 600px) {
+      font-size: 16px;
+      line-height: 22px;
+    }
     color: #555;
     font-size: 20px;
     font-weight: 400;
@@ -419,6 +501,10 @@ const Modal = styled.div`
   }
 
   button {
+    @media (max-width: 600px) {
+      width: 134px;
+      height: 54px;
+    }
     cursor: pointer;
     width: 200px;
     height: 60px;
@@ -437,6 +523,9 @@ const Modal = styled.div`
   }
 
   .btnForm {
+    @media (max-width: 600px) {
+      gap: 10px;
+    }
     display: flex;
     gap: 20px;
   }
