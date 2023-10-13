@@ -47,6 +47,9 @@ export default function Title({
 }
 
 const TopLayout = styled.div`
+  @media (max-width: 600px) {
+    display: none;
+  }
   width: 100%;
   display: flex;
   flex-direction: column;

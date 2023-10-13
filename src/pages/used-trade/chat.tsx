@@ -29,18 +29,23 @@ interface IChatListData {
 }
 
 export default function Chatting() {
+  //FIX: 작은 프로젝트에서 파라미터 사용은 좋지 않음
+  const [searchParams, setSearchParams] = useSearchParams();
+  const roomIdx = searchParams.get("room");
+  const currentId = searchParams.get("id");
+
   const { data } = useQuery(GET_CHAT_DATA);
   const [readMessage] = useMutation(READ_MESSAGES);
 
+  //FIX: 여기서 불러온 데이터를 채팅방과 메세지에 props로 전달
   const edges = useMemo(() => {
     return data?.myBusinessChatChannels?.edges;
   }, [data]);
 
-  const [searchParams, setSearchParams] = useSearchParams();
-  const roomIdx = searchParams.get("room");
-
-  const changeRoom = (id: string, num: number) => {
-    readMessage({
+  //FIX: 아래와 같은 함수는 다양한 이유로 처리가 안 될 수도 있기 때문에 await 사용(다른 페이지에도)
+  const changeRoom = async (id: string, num: number) => {
+    if (id === currentId) return;
+    await readMessage({
       variables: {
         channelId: id,
       },
@@ -49,6 +54,10 @@ export default function Chatting() {
     searchParams.set("id", id);
     searchParams.set("room", (num + 1).toString());
     setSearchParams(searchParams);
+
+    // Mobile
+    if (matchMedia("(max-width: 600px)").matches) {
+    }
   };
 
   return (
@@ -101,18 +110,41 @@ export default function Chatting() {
     </Layout>
   );
 }
-
 const Layout = styled.div`
+  @media (max-width: 600px) {
+    width: 100%;
+    height: 100;
+    margin: 0;
+  }
   margin: 0 auto 100px;
   width: 1440px;
 
   > div:not(:first-child) {
+    @media (max-width: 600px) {
+      margin: 0;
+    }
     display: flex;
     margin: 0 100px;
     gap: 20px;
   }
+`;
+
+const ChatList = styled.div`
+  @media (max-width: 600px) {
+    display: none;
+    width: 100%;
+    height: 100%;
+    border: none;
+  }
+  width: 420px;
+  height: 800px;
+  border-radius: 10px;
+  border: solid 1px #d8dde5;
 
   .chatListTitle {
+    @media (max-width: 600px) {
+      height: 50px;
+    }
     width: 100%;
     height: 60px;
     gap: 8px;
@@ -121,6 +153,11 @@ const Layout = styled.div`
     border-bottom: solid 1px #d8dde5;
   }
   h4 {
+    @media (max-width: 600px) {
+      font-size: 16px;
+      line-height: 16px;
+      margin-left: 20px;
+    }
     font-size: 18px;
     font-weight: 700;
     line-height: 30px;
@@ -128,18 +165,15 @@ const Layout = styled.div`
     margin-left: 24px;
   }
   .chatCount {
+    @media (max-width: 600px) {
+      font-size: 16px;
+      line-height: 16px;
+    }
     color: #193dd0;
     font-size: 18px;
     font-weight: 700;
     line-height: 30px;
   }
-`;
-
-const ChatList = styled.div`
-  width: 420px;
-  height: 800px;
-  border-radius: 10px;
-  border: solid 1px #d8dde5;
 `;
 
 const ChatRoomLay = styled.div`
@@ -166,6 +200,9 @@ const ChatRoom = styled.div<{ $active: boolean }>`
   }
 
   .chatsTitleSort {
+    @media (max-width: 600px) {
+      width: 265px;
+    }
     width: 290px;
     padding: 5px 0;
     display: flex;
@@ -177,6 +214,9 @@ const ChatRoom = styled.div<{ $active: boolean }>`
   }
 
   .chatsBodySort {
+    @media (max-width: 600px) {
+      width: 265px;
+    }
     width: 290px;
     margin-top: 12px;
     display: flex;
