@@ -34,6 +34,7 @@ export const GET_CHAT_DATA = gql`
 export const CHECK_CHANNEL = gql`
   query BusinessChatChannel($businessChatChannelId: ID!) {
     businessChatChannel(id: $businessChatChannelId) {
+      state
       secondhand {
         state
         category {
