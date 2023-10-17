@@ -1,0 +1,107 @@
+query MyBusinessChatChannels {
+  myBusinessChatChannels {
+    totalCount
+    pageInfo {
+      endCursor
+    }
+    edges {
+      node {
+        id
+        secondhand {
+          author {
+            name
+          }
+        }
+        lastMessage {
+          createdAt
+          message
+        }
+        unreadMessageCount
+        images {
+          url
+        }
+      }
+    }
+  }
+}
+
+query BusinessChatChannel($businessChatChannelId: ID!) {
+  businessChatChannel(id: $businessChatChannelId) {
+    state
+    secondhand {
+      state
+      category {
+        name
+      }
+      content
+      price
+      images {
+        url
+      }
+      author {
+        name
+      }
+    }
+  }
+}
+
+query BusinessChatMessages($channelId: ID!, $after: String, $first: Int) {
+  businessChatMessages(channelId: $channelId, after: $after, first: $first) {
+    totalCount
+    pageInfo {
+      endCursor
+      hasNextPage
+    }
+    edges {
+      node {
+        message
+        type
+        createdAt
+        unreadUserCount
+        channel {
+          participants {
+            isMine
+            user {
+              id
+            }
+          }
+          lastMessage {
+            createdAt
+          }
+          secondhand {
+            author {
+              name
+            }
+          }
+        }
+        author {
+          id
+        }
+        payload {
+          ... on ChatMessageFileTypePayload {
+            url
+            size
+            filename
+          }
+        }
+      }
+    }
+  }
+}
+
+mutation ReadBusinessChatMessages($channelId: ID!) {
+  readBusinessChatMessages(channelId: $channelId)
+}
+
+mutation SendBusinessChatMessage($data: BusinessChatMessageCreateInput!) {
+  sendBusinessChatMessage(data: $data) {
+    id
+  }
+}
+
+subscription ReceiveBusinessChatMessage($channelId: ID!) {
+  receiveBusinessChatMessage(channelId: $channelId) {
+    id
+    message
+  }
+}

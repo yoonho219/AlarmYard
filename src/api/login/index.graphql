@@ -1,0 +1,45 @@
+
+
+  mutation SignIn($loginId: String!, $password: String!) {
+    signIn(loginId: $loginId, password: $password) {
+      accessToken
+    }
+  }
+
+  mutation GetKakaoAccessToken($code: String!, $redirectUri: String!) {
+    getKakaoAccessToken(code: $code, redirectUri: $redirectUri) {
+      jwtData {
+        access_token
+      }
+    }
+  }
+  mutation SignUpKakao($accessToken: String!) {
+    signUpKakao(accessToken: $accessToken) {
+      token {
+        accessToken
+      }
+      user {
+        id
+      }
+    }
+  }
+  mutation SignUpGoogle($accessToken: String!) {
+    signUpGoogle(accessToken: $accessToken) {
+      token {
+        accessToken
+      }
+      user {
+        id
+      }
+    }
+  }
+  mutation SignUpNaver($accessToken: String!) {
+    signUpNaver(accessToken: $accessToken) {
+      token {
+        accessToken
+      }
+      user {
+        id
+      }
+    }
+  }
